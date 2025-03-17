@@ -1,0 +1,12 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bachelor-app",
+	"main": "./.cloudflare/worker.js",
+	"site": {
+		"bucket": "./.cloudflare/public"
+	},
+	"compatibility_date": "2025-03-17",
+	"compatibility_flags": ["nodejs_compat"],
+
+	"observability": { "enabled": true }
+}

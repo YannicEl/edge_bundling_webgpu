@@ -1,0 +1,14 @@
+{
+	"name": "@bachelor/core",
+	"private": true,
+	"type": "module",
+	"main": "src/index.js",
+	"sideEffects": false,
+	"exports": {
+		"./*": "./src/*.ts"
+	},
+	"scripts": {},
+	"devDependencies": {
+		"@total-typescript/tsconfig": "1.0.4"
+	}
+}
