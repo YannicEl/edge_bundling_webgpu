@@ -1,5 +1,5 @@
 import { Graph } from './Graph';
-import type { Vertice } from './Vertice';
+import type { Vertex } from './Vertex';
 
 export function greedySpanner(graph: Graph, stretchFactor = 2): Graph {
 	const spanner = new Graph(graph.vertices, []);
@@ -17,16 +17,16 @@ export function greedySpanner(graph: Graph, stretchFactor = 2): Graph {
 	return spanner;
 }
 
-function calculateShortestPath(graph: Graph, start: Vertice, end: Vertice): number | null {
-	const length = null;
+function calculateShortestPath(graph: Graph, start: Vertex, end: Vertex): number | null {
+	const length = dijkstra(graph, start, end);
 
 	return length;
 }
 
-export function dijkstra(graph: Graph, start: Vertice, end: Vertice): Vertice[] {
-	const distances: Map<Vertice, number> = new Map();
-	const previous: Map<Vertice, Vertice | null> = new Map();
-	const unvisited: Vertice[] = [...graph.vertices];
+export function dijkstra(graph: Graph, start: Vertex, end: Vertex): number | null {
+	const distances: Map<Vertex, number> = new Map();
+	const previous: Map<Vertex, Vertex | null> = new Map();
+	const unvisited: Vertex[] = [...graph.vertices];
 
 	for (const vertex of graph.vertices) {
 		distances.set(vertex, vertex === start ? 0 : Infinity);
@@ -41,14 +41,15 @@ export function dijkstra(graph: Graph, start: Vertice, end: Vertice): Vertice[] 
 		unvisited.splice(unvisited.indexOf(smallest), 1);
 
 		if (smallest === end) {
-			const path: Vertice[] = [];
-			let temp: Vertice | null | undefined = smallest;
+			const path: Vertex[] = [];
+			let temp: Vertex | null | undefined = smallest;
 			while (temp) {
 				path.push(temp);
 				temp = previous.get(temp);
 			}
 
-			return path.reverse();
+			//sum the weights of the path
+			return null;
 		}
 
 		for (const edge of graph.edges) {
@@ -62,5 +63,5 @@ export function dijkstra(graph: Graph, start: Vertice, end: Vertice): Vertice[] 
 		}
 	}
 
-	return [];
+	return null;
 }
