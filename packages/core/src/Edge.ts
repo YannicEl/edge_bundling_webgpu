@@ -1,11 +1,11 @@
-import type { Vertex } from './Vertex';
+import type { Node } from './Node';
 
 export class Edge {
-	start: Vertex;
-	end: Vertex;
+	start: Node;
+	end: Node;
 	weight: number;
 
-	constructor(start: Vertex, end: Vertex) {
+	constructor(start: Node, end: Node) {
 		this.start = start;
 		this.end = end;
 

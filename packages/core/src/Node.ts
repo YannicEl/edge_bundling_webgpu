@@ -1,9 +1,9 @@
-export type VertexJSON = {
+export type NodeJSON = {
 	x: number;
 	y: number;
 };
 
-export class Vertex {
+export class Node {
 	x: number;
 	y: number;
 

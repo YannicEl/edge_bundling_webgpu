@@ -1,30 +1,3 @@
-{
-	"name": "@bachelor/app",
-	"private": true,
-	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev --port 3000",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-	},
-	"devDependencies": {
-		"@sveltejs/adapter-cloudflare-workers": "2.9.0",
-		"@sveltejs/kit": "2.19.2",
-		"@sveltejs/vite-plugin-svelte": "5.0.3",
-		"postcss-nesting": "13.0.1",
-		"svelte": "5.23.1",
-		"svelte-check": "4.1.5",
-		"typescript": "5.8.2",
-		"unocss": "66.0.0",
-		"vite": "6.2.2",
-		"wrangler": "4.0.0"
-	},
-	"dependencies": {
-		"@bachelor/core": "workspace:",
-		"@unocss/reset": "66.0.0"
-	}
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:b5375c35362953c46d840fcf1c8e30f19d27e574ab9d9e8806cd01b4100f4cc8
+size 796

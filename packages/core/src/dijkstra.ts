@@ -1,19 +1,19 @@
 import type { Graph } from './Graph';
-import type { Vertex } from './Vertex';
+import type { Node } from './Node';
 
 type Path = {
-	vertices: Vertex[];
+	nodes: Node[];
 	length: number;
 };
 
-export function dijkstra(graph: Graph, start: Vertex, end: Vertex): Path | null {
+export function dijkstra(graph: Graph, start: Node, end: Node): Path | null {
 	if (graph.edges.size === 0) return null;
 
-	const unvisited = new Set<Vertex>();
-	const previous = new Map<Vertex, Vertex | null>();
-	const distances = new Map<Vertex, number>();
+	const unvisited = new Set<Node>();
+	const previous = new Map<Node, Node | null>();
+	const distances = new Map<Node, number>();
 
-	for (const vertex of graph.vertices) {
+	for (const vertex of graph.nodes) {
 		unvisited.add(vertex);
 		previous.set(vertex, null);
 		distances.set(vertex, Infinity);
@@ -30,14 +30,14 @@ export function dijkstra(graph: Graph, start: Vertex, end: Vertex): Path | null 
 			const length = distances.get(end)!;
 			if (length === Infinity) return null;
 
-			const vertices: Vertex[] = [end];
+			const nodes: Node[] = [end];
 			let temp = end;
 			while (temp !== start) {
 				temp = previous.get(temp)!;
-				vertices.unshift(temp);
+				nodes.unshift(temp);
 			}
 
-			return { vertices, length };
+			return { nodes, length };
 		}
 
 		for (const edge of graph.edges) {

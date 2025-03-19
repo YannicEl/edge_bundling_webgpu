@@ -43,7 +43,7 @@ export function edgePathBundling(
 		if (shortestPath.length <= maxDistortion * edge.weight) {
 			bundeledEdges.push({
 				edge,
-				controlPoints: shortestPath.vertices.slice(1, -1).map(({ x, y }) => ({ x, y })),
+				controlPoints: shortestPath.nodes.slice(1, -1).map(({ x, y }) => ({ x, y })),
 			});
 		}
 	}

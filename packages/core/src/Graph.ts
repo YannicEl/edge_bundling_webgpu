@@ -1,47 +1,47 @@
 import { Edge } from './Edge';
-import type { VertexJSON } from './Vertex';
-import { Vertex } from './Vertex';
+import type { NodeJSON } from './Node';
+import { Node } from './Node';
 
 export type GraphJSON = {
-	vertices: VertexJSON[];
+	nodes: NodeJSON[];
 	edges: { start: number; end: number }[];
 };
 
 export class Graph {
-	vertices: Set<Vertex>;
+	nodes: Set<Node>;
 	edges: Set<Edge>;
 
-	constructor(vertices: Vertex[] | Set<Vertex> = [], edges: Edge[] | Set<Edge> = []) {
-		this.vertices = new Set(vertices);
+	constructor(nodes: Node[] | Set<Node> = [], edges: Edge[] | Set<Edge> = []) {
+		this.nodes = new Set(nodes);
 		this.edges = new Set(edges);
 	}
 
 	static fromJSON(json: GraphJSON): Graph {
-		const vertices: Vertex[] = [];
-		for (const vertex of json.vertices) {
-			vertices.push(new Vertex(vertex.x, vertex.y));
+		const nodes: Node[] = [];
+		for (const vertex of json.nodes) {
+			nodes.push(new Node(vertex.x, vertex.y));
 		}
 
 		const edges: Edge[] = [];
 		for (const edge of json.edges) {
-			const start = vertices[edge.start];
-			const end = vertices[edge.end];
+			const start = nodes[edge.start];
+			const end = nodes[edge.end];
 			if (start && end) {
 				edges.push(new Edge(start, end));
 			}
 		}
 
-		return new Graph(vertices, edges);
+		return new Graph(nodes, edges);
 	}
 
 	toJSON(): GraphJSON {
-		const vertices = Array.from(this.vertices);
+		const nodes = Array.from(this.nodes);
 
 		return {
-			vertices,
+			nodes,
 			edges: Array.from(this.edges).map((edge) => ({
-				start: vertices.indexOf(edge.start),
-				end: vertices.indexOf(edge.end),
+				start: nodes.indexOf(edge.start),
+				end: nodes.indexOf(edge.end),
 			})),
 		};
 	}
