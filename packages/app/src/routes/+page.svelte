@@ -3,7 +3,7 @@
 	import { edgePathBundling } from '@bachelor/core/edgePathBundling';
 	import { drawLine, drawCircle, drawBezierCurve } from '@bachelor/core/canvas';
 	import { onMount } from 'svelte';
-	import graphJSON from '$lib/data/graphs/airtraffic.json' with { type: 'json' };
+	import graphJSON from '$lib/data/graphs/airlines.json' with { type: 'json' };
 
 	const graph = Graph.fromJSON(graphJSON);
 

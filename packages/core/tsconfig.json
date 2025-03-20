@@ -1,3 +1,6 @@
 {
-	"extends": "@total-typescript/tsconfig/bundler/dom/library-monorepo"
+	"extends": "@total-typescript/tsconfig/bundler/dom/library-monorepo",
+	"compilerOptions": {
+		"types": ["@webgpu/types"]
+	}
 }

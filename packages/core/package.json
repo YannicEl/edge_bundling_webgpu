@@ -9,6 +9,7 @@
 	},
 	"scripts": {},
 	"devDependencies": {
-		"@total-typescript/tsconfig": "1.0.4"
+		"@total-typescript/tsconfig": "1.0.4",
+		"@webgpu/types": "0.1.57"
 	}
 }
