@@ -33,7 +33,9 @@ export function edgePathBundling(
 		controlPoints: { x: number; y: number }[];
 	}[] = [];
 
+	let i = 0;
 	for (const edge of difference) {
+		console.log(`Bundeling edge ${i} of ${difference.length} edges`);
 		const shortestPath = dijkstra(spanner, edge.start, edge.end);
 
 		if (shortestPath === null) {
@@ -46,6 +48,8 @@ export function edgePathBundling(
 				controlPoints: shortestPath.nodes.slice(1, -1).map(({ x, y }) => ({ x, y })),
 			});
 		}
+
+		i++;
 	}
 
 	return {

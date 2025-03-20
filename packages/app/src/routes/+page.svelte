@@ -3,7 +3,7 @@
 	import { edgePathBundling } from '@bachelor/core/edgePathBundling';
 	import { drawLine, drawCircle, drawBezierCurve } from '@bachelor/core/canvas';
 	import { onMount } from 'svelte';
-	import graphJSON from '$lib/data/graphs/airlines.json' with { type: 'json' };
+	import graphJSON from '$lib/data/graphs/airtraffic.json' with { type: 'json' };
 
 	const graph = Graph.fromJSON(graphJSON);
 
@@ -26,6 +26,7 @@
 		});
 		console.timeEnd('EPB');
 
+		console.time('Draw');
 		drawGraph(ctx, spanner);
 
 		bundeledEdges.forEach(({ edge, controlPoints }, i) => {
@@ -34,6 +35,7 @@
 				color: 'red',
 			});
 		});
+		console.timeEnd('Draw');
 	});
 
 	function drawGraph(ctx: CanvasRenderingContext2D, graph: Graph): void {
