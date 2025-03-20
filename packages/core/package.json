@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:59f9e6a64c034f0739194ff3ee98b3fcc77a5f5aaa50c2109c4bc7981e965145
-size 237
+{
+	"name": "@bachelor/core",
+	"private": true,
+	"type": "module",
+	"main": "src/index.js",
+	"sideEffects": false,
+	"exports": {
+		"./*": "./src/*.ts"
+	},
+	"scripts": {},
+	"devDependencies": {
+		"@total-typescript/tsconfig": "1.0.4"
+	}
+}

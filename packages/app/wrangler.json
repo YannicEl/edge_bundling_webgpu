@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bd47d5625ccf8a3296db14a9a94f76f8852dff011a006085aa197b57c8d1263b
-size 290
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bachelor-app",
+	"main": "./.cloudflare/worker.js",
+	"site": {
+		"bucket": "./.cloudflare/public"
+	},
+	"compatibility_date": "2025-03-17",
+	"compatibility_flags": ["nodejs_compat"],
+
+	"observability": { "enabled": true }
+}
