@@ -1,3 +1,4 @@
+import { UniformBuffer } from './buffer';
 import shader from './compute.wgsl?raw';
 import type { Graph } from './Graph';
 
@@ -13,6 +14,18 @@ export async function greedySpannerGpu({ device, graph }: GreedySpannerGpuParams
 		compute: {
 			module: device.createShaderModule({ code: shader }),
 		},
+	});
+
+	const test = new UniformBuffer({
+		position: 'vec2u',
+		edges: 'uint',
+		node: 'uint',
+	});
+
+	test.set({
+		position: [2],
+		edges: [1, 2, 3, 4],
+		node: 5,
 	});
 
 	const length = 4;
@@ -42,12 +55,12 @@ export async function greedySpannerGpu({ device, graph }: GreedySpannerGpuParams
 	device.queue.writeBuffer(edgeBuffer, 0, edgeBufferData);
 
 	const outputBuffer = device.createBuffer({
-		size: 4,
+		size: 1024,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
 	});
 
 	const outputReadBuffer = device.createBuffer({
-		size: 4,
+		size: 1024,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 
@@ -75,7 +88,7 @@ export async function greedySpannerGpu({ device, graph }: GreedySpannerGpuParams
 		0, // Source offset
 		outputReadBuffer,
 		0, // Destination offset
-		4
+		1024
 	);
 
 	// Finish encoding and submit the commands

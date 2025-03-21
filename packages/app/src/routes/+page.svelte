@@ -32,7 +32,7 @@
 		bundeledEdges.forEach(({ edge, controlPoints }, i) => {
 			drawBezierCurve(ctx, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
 				width: 1,
-				color: 'red',
+				color: 'color(srgb 1 0 0 / 0.2)',
 			});
 		});
 		console.timeEnd('Draw');

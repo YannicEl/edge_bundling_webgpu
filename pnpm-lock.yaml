@@ -30,7 +30,7 @@ importers:
         specifier: 66.0.0
         version: 66.0.0
       bits-ui:
-        specifier: ^1.3.13
+        specifier: 1.3.13
         version: 1.3.13(svelte@5.23.1)
     devDependencies:
       '@sveltejs/adapter-cloudflare-workers':
@@ -43,7 +43,7 @@ importers:
         specifier: 5.0.3
         version: 5.0.3(svelte@5.23.1)(vite@6.2.2(jiti@2.4.2))
       '@webgpu/types':
-        specifier: ^0.1.57
+        specifier: 0.1.57
         version: 0.1.57
       postcss-nesting:
         specifier: 13.0.1
@@ -73,7 +73,7 @@ importers:
         specifier: 1.0.4
         version: 1.0.4
       '@webgpu/types':
-        specifier: ^0.1.57
+        specifier: 0.1.57
         version: 0.1.57
 
 packages:
