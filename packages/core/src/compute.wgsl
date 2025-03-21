@@ -10,9 +10,8 @@ struct Edge {
   weight: f32,
 }
 
-@group(0) @binding(1) var<storage, read> nodes: array<vec3f>;
+@group(0) @binding(1) var<storage, read> nodes: array<Node>;
 @group(0) @binding(2) var<storage, read> edges: array<Edge>;
-// @group(0) @binding(3) var<storage, read_write> output: u32;
 @group(0) @binding(3) var<storage, read_write> output: array<Node>;
 
 @compute @workgroup_size(64) fn compute(
@@ -24,8 +23,8 @@ struct Edge {
     let edge = edges[i];
 
     // output = i;
-    output[i].position = vec2u(1, 2);
-    output[i].edges = 10;
-    output[i].neighbors = 200;
+    output[i].position = node.position;
+    output[i].edges = node.edges;
+    output[i].neighbors = node.neighbors;
   }
 }

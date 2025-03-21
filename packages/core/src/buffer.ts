@@ -11,22 +11,23 @@ type DataType =
 	| 'vec4i'
 	| 'vec4u'
 	| 'vec4f';
-export type UniformBufferParams<T extends string, Y extends DataType> = Record<T, Y>;
 
 type TypedArrayConstructor =
 	| Float32ArrayConstructor
 	| Int32ArrayConstructor
 	| Uint32ArrayConstructor;
 
-type Test<Path extends DataType> = Path extends 'int' | 'uint' | 'float'
-	? number
-	: Path extends `vec2${infer _}`
-		? [number, number]
-		: Path extends `vec3${infer _}`
-			? [number, number, number]
-			: Path extends `vec4${infer _}`
-				? [number, number, number, number]
-				: never;
+type SetParams<T extends Record<string, DataType>> = {
+	[K in keyof T]: T[K] extends 'int' | 'uint' | 'float'
+		? number
+		: T[K] extends `vec2${infer _}`
+			? [number, number]
+			: T[K] extends `vec3${infer _}`
+				? [number, number, number]
+				: T[K] extends `vec4${infer _}`
+					? [number, number, number, number]
+					: never;
+};
 
 export const DATA_TYPE_SIZES: Record<
 	DataType,
@@ -46,17 +47,22 @@ export const DATA_TYPE_SIZES: Record<
 	vec4f: { size: 16, typedArrayConstructor: Float32Array },
 } as const;
 
-export class UniformBuffer<T extends string = any, Y extends DataType = any> {
-	descriptor: GPUBufferDescriptor;
-	value: ArrayBuffer;
-	buffer?: GPUBuffer;
+export type UniformBufferParams<T> = {
+	[K in keyof T]: T[K];
+};
 
-	offsets = {} as Record<
-		T,
-		{ typedArrayConstructor: TypedArrayConstructor; byteOffset: number; length: number }
-	>;
+export type Offsets<T> = Record<
+	keyof T,
+	{ typedArrayConstructor: TypedArrayConstructor; byteOffset: number; length: number }
+>;
 
-	constructor(params: UniformBufferParams<T, Y>, label?: string) {
+export class BufferData<T extends Record<string, DataType>> {
+	buffer: ArrayBuffer;
+	structLength: number;
+
+	offsets = {} as Offsets<T>;
+
+	constructor(params: UniformBufferParams<T>, length = 1) {
 		let currentOffset = 0;
 		for (const key in params) {
 			const { size, align, typedArrayConstructor } = DATA_TYPE_SIZES[params[key]];
@@ -77,35 +83,23 @@ export class UniformBuffer<T extends string = any, Y extends DataType = any> {
 			currentOffset += size + padding;
 		}
 
-		const byteLength = currentOffset + (16 - (currentOffset % 16));
-		this.value = new ArrayBuffer(byteLength);
-
-		this.descriptor = {
-			label,
-			size: this.value.byteLength,
-			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-		};
+		const byteLength = currentOffset + ((16 - (currentOffset % 16)) % 16);
+		this.buffer = new ArrayBuffer(byteLength * length);
+		this.structLength = byteLength;
 	}
 
-	set(values: Partial<Record<T, Test<Y>>>) {
+	set(values: Partial<SetParams<T>>, index = 0): void {
 		for (const key in values) {
 			const value = values[key];
 			if (value) {
 				const { typedArrayConstructor, byteOffset, length } = this.offsets[key];
-				const view = new typedArrayConstructor(this.value, byteOffset, length);
+				const view = new typedArrayConstructor(
+					this.buffer,
+					index * this.structLength + byteOffset,
+					length
+				);
 				view.set(Array.isArray(value) ? value : [value]);
 			}
 		}
-	}
-
-	load(device: GPUDevice): GPUBuffer {
-		if (this.buffer) return this.buffer;
-		this.buffer = device.createBuffer(this.descriptor);
-		return this.buffer;
-	}
-
-	write(device: GPUDevice) {
-		const buffer = this.load(device);
-		device.queue.writeBuffer(buffer, 0, this.value);
 	}
 }

@@ -1,4 +1,4 @@
-import { UniformBuffer } from './buffer';
+import { BufferData } from './buffer';
 import shader from './compute.wgsl?raw';
 import type { Graph } from './Graph';
 
@@ -16,43 +16,59 @@ export async function greedySpannerGpu({ device, graph }: GreedySpannerGpuParams
 		},
 	});
 
-	const test = new UniformBuffer({
-		position: 'vec2u',
-		edges: 'uint',
-		node: 'uint',
-	});
-
-	test.set({
-		position: [2],
-		edges: [1, 2, 3, 4],
-		node: 5,
-	});
-
 	const length = 4;
 
-	const nodeBufferData = new Float32Array(length * 4 - 1);
+	const nodeBufferData = new BufferData(
+		{
+			position: 'vec2u',
+			edges: 'uint',
+			neighbors: 'uint',
+		},
+		length
+	);
 	for (let i = 0; i < length; i++) {
-		nodeBufferData.set([1 * i, 2 * i, 3 * i], i * 4);
+		nodeBufferData.set(
+			{
+				position: [1 * i, 2 * i],
+				edges: 10 * i,
+				neighbors: 100 * i,
+			},
+			i
+		);
 	}
 
 	const nodeBuffer = device.createBuffer({
-		size: nodeBufferData.byteLength,
+		size: nodeBufferData.buffer.byteLength,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	device.queue.writeBuffer(nodeBuffer, 0, nodeBufferData);
+	device.queue.writeBuffer(nodeBuffer, 0, nodeBufferData.buffer);
 
-	const edgeBufferData = new Float32Array(length * 4 - 1);
+	const edgeBufferData = new BufferData(
+		{
+			start: 'uint',
+			end: 'uint',
+			weight: 'uint',
+		},
+		length
+	);
 	for (let i = 0; i < length; i++) {
-		edgeBufferData.set([1 * i, 2 * i, 3 * i], i * 4);
+		edgeBufferData.set(
+			{
+				start: 1,
+				end: 10,
+				weight: 10,
+			},
+			i
+		);
 	}
 
 	const edgeBuffer = device.createBuffer({
-		size: edgeBufferData.byteLength,
+		size: edgeBufferData.buffer.byteLength,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	device.queue.writeBuffer(edgeBuffer, 0, edgeBufferData);
+	device.queue.writeBuffer(edgeBuffer, 0, edgeBufferData.buffer);
 
 	const outputBuffer = device.createBuffer({
 		size: 1024,
