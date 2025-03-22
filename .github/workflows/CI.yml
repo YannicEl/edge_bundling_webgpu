@@ -36,6 +36,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Restore playwright cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright- #${{ env.PLAYWRIGHT_VERSION }}
+
       - name: Format Check
         run: pnpm format:check
 
@@ -52,3 +58,9 @@ jobs:
       - name: Build dry build
         if: ${{ startsWith(github.head_ref, 'renovate/') }}
         run: pnpm --filter "app" run build
+
+      - name: Cache playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright- #${{ env.PLAYWRIGHT_VERSION }}
