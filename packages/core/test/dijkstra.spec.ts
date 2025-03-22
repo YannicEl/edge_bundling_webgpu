@@ -205,16 +205,12 @@ const testData = [
 	},
 ];
 
-test(
-	'Dijkstra GPU',
-	async () => {
-		const { device } = await initWebGPU();
+test('Dijkstra GPU', { retry: 10 }, async () => {
+	const { device } = await initWebGPU();
 
-		const graph = new Graph();
-		const spanner = await greedySpannerGpu({ device, graph });
-	},
-	{ retry: 10 }
-);
+	const graph = new Graph();
+	const spanner = await greedySpannerGpu({ device, graph });
+});
 
 test.each(testData)('Dijkstra %#', async (parmas) => {
 	const jsonGraph = await import(`../../app/src/lib/data/graphs/${parmas.file}.json`);
