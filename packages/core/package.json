@@ -7,9 +7,16 @@
 	"exports": {
 		"./*": "./src/*.ts"
 	},
-	"scripts": {},
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepare": "playwright install --with-deps chromium"
+	},
 	"devDependencies": {
 		"@total-typescript/tsconfig": "1.0.4",
-		"@webgpu/types": "0.1.57"
+		"@vitest/browser": "3.0.9",
+		"@webgpu/types": "0.1.57",
+		"playwright": "1.51.1",
+		"vitest": "3.0.9"
 	}
 }

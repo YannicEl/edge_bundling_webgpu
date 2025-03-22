@@ -1,0 +1,9 @@
+# Ignore files for PNPM, NPM and YARN
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+worker-configuration.d.ts
+worker-runtime.d.ts
+.svelte-kit
+.wrangler
+packages/app/src/lib/data
