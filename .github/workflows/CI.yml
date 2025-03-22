@@ -37,7 +37,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright- #${{ env.PLAYWRIGHT_VERSION }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: playwright-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install
@@ -58,9 +59,3 @@ jobs:
       - name: Build dry build
         if: ${{ startsWith(github.head_ref, 'renovate/') }}
         run: pnpm --filter "app" run build
-
-      - name: Cache playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright- #${{ env.PLAYWRIGHT_VERSION }}
