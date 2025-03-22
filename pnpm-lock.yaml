@@ -70,7 +70,7 @@ importers:
   packages/core:
     dependencies:
       dijkstrajs:
-        specifier: ^1.0.3
+        specifier: 1.0.3
         version: 1.0.3
     devDependencies:
       '@total-typescript/tsconfig':

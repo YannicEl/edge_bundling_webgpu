@@ -20,6 +20,6 @@
 		"vitest": "3.0.9"
 	},
 	"dependencies": {
-		"dijkstrajs": "^1.0.3"
+		"dijkstrajs": "1.0.3"
 	}
 }
