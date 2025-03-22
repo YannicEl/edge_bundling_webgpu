@@ -1,6 +1,6 @@
 {
 	"extends": "@total-typescript/tsconfig/bundler/dom/library-monorepo",
 	"compilerOptions": {
-		"types": ["@webgpu/types"]
+		"types": ["@webgpu/types", "@vitest/browser/providers/playwright"]
 	}
 }

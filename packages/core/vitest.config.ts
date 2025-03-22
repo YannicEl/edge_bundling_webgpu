@@ -5,12 +5,16 @@ export default defineConfig({
 		browser: {
 			enabled: true,
 			ui: false,
-			headless: true,
+			headless: false,
+			screenshotFailures: false,
 			provider: 'playwright',
 			// https://vitest.dev/guide/browser/playwright
 			instances: [
 				{
 					browser: 'chromium',
+					launch: {
+						args: ['--enable-unsafe-webgpu'],
+					},
 				},
 			],
 		},
