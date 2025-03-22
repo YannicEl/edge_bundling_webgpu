@@ -9,7 +9,7 @@
 	onMount(async () => {
 		const graphJSON = await import('$lib/data/graphs/airlines.json');
 		const graph = Graph.fromJSON(graphJSON);
-    
+
 		if (!canvas) return;
 
 		const { width, height } = canvas.getBoundingClientRect();
