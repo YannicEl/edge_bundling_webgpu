@@ -2,12 +2,12 @@
 	import { onMount } from 'svelte';
 	import { initWebGPU } from '@bachelor/core/webGpu';
 	import { greedySpannerGpu } from '@bachelor/core/spannerGpu';
-	import graphJSON from '$lib/data/graphs/airlines.json' with { type: 'json' };
 	import { Graph } from '@bachelor/core/Graph';
 
 	onMount(async () => {
 		const { device } = await initWebGPU();
 
+		const graphJSON = await import('$lib/data/graphs/airlines.json');
 		const graph = Graph.fromJSON(graphJSON);
 
 		console.time('greedySpannerGpu');
