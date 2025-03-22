@@ -3,4 +3,4 @@
 19.03.2025 4h implementing EPB algorithm in JS
 20.03.2025 4h implementing EPB algorithm in WebGPU
 21.03.2025 6h implementing EPB algorithm in WebGPU
-22.03.2025 h implementing EPB algorithm in WebGPU + test setup
+22.03.2025 6h implementing EPB algorithm in WebGPU + test setup + ci setup

@@ -13,7 +13,7 @@ export default defineConfig({
 				{
 					browser: 'chromium',
 					launch: {
-						args: ['--enable-unsafe-webgpu'], //'--window-position=-10000,-10000'],
+						args: ['--enable-unsafe-webgpu'],
 					},
 				},
 			],

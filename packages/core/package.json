@@ -18,8 +18,5 @@
 		"@webgpu/types": "0.1.58",
 		"playwright": "1.51.1",
 		"vitest": "3.0.9"
-	},
-	"dependencies": {
-		"dijkstrajs": "^1.0.3"
 	}
 }
