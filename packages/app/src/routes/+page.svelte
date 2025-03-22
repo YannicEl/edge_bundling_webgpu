@@ -3,13 +3,13 @@
 	import { edgePathBundling } from '@bachelor/core/edgePathBundling';
 	import { drawLine, drawCircle, drawBezierCurve } from '@bachelor/core/canvas';
 	import { onMount } from 'svelte';
-	import graphJSON from '$lib/data/graphs/airlines.json' with { type: 'json' };
-
-	const graph = Graph.fromJSON(graphJSON);
 
 	let canvas = $state<HTMLCanvasElement | null>();
 
-	onMount(() => {
+	onMount(async () => {
+		const graphJSON = await import('$lib/data/graphs/airlines.json');
+		const graph = Graph.fromJSON(graphJSON);
+    
 		if (!canvas) return;
 
 		const { width, height } = canvas.getBoundingClientRect();
