@@ -203,7 +203,7 @@ const testData = [
 		path: [918, 135, 166, 229, 769, 1211],
 		length: 94.28961171848935,
 	},
-];
+] as const;
 
 test('Dijkstra GPU', { retry: 10 }, async () => {
 	const { device } = await initWebGPU();
