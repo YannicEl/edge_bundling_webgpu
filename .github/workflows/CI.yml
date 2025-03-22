@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   CI:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       DO_NOT_TRACK: 1
 
