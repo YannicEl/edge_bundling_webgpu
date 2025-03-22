@@ -22,9 +22,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Git large file storage pull
-        run: git lfs pull
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:

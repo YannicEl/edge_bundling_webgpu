@@ -1,8 +1,3 @@
-export type NodeJSON = {
-	x: number;
-	y: number;
-};
-
 export class Node {
 	x: number;
 	y: number;

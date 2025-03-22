@@ -1,10 +1,9 @@
 import { Edge } from './Edge';
-import type { NodeJSON } from './Node';
 import { Node } from './Node';
 
 export type GraphJSON = {
-	nodes: NodeJSON[];
-	edges: { start: number; end: number }[];
+	nodes: [number, number][];
+	edges: [number, number][];
 };
 
 export class Graph {
@@ -18,14 +17,14 @@ export class Graph {
 
 	static fromJSON(json: GraphJSON): Graph {
 		const nodes: Node[] = [];
-		for (const vertex of json.nodes) {
-			nodes.push(new Node(vertex.x, vertex.y));
+		for (const [x, y] of json.nodes) {
+			nodes.push(new Node(x, y));
 		}
 
 		const edges: Edge[] = [];
-		for (const edge of json.edges) {
-			const start = nodes[edge.start];
-			const end = nodes[edge.end];
+		for (const [startIndex, endIndex] of json.edges) {
+			const start = nodes[startIndex];
+			const end = nodes[endIndex];
 			if (start && end) {
 				edges.push(new Edge(start, end));
 			}
@@ -39,11 +38,11 @@ export class Graph {
 		const nodes = Array.from(this.nodes);
 
 		return {
-			nodes,
-			edges: Array.from(this.edges).map((edge) => ({
-				start: nodes.indexOf(edge.start),
-				end: nodes.indexOf(edge.end),
-			})),
+			nodes: nodes.map(({ x, y }) => [x, y]),
+			edges: Array.from(this.edges).map(({ start, end }) => [
+				nodes.indexOf(start),
+				nodes.indexOf(end),
+			]),
 		};
 	}
 }
