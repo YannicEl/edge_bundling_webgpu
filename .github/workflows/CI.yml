@@ -33,14 +33,14 @@ jobs:
           node-version: 22
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install
-
       - name: Restore playwright cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright- #${{ env.PLAYWRIGHT_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Format Check
         run: pnpm format:check
