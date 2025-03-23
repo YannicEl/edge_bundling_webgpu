@@ -1,11 +1,8 @@
 struct Node {
-  position: vec2<u32>,
   edges: u32,
-  neighbors: u32,
 }
 
 struct Edge {
-  start: u32,
   end: u32,
   weight: f32,
 }
@@ -20,11 +17,7 @@ struct Edge {
 ) {
   for (var i = 0u; i <= arrayLength(&nodes); i++) {
     let node = nodes[i];
-    let edge = edges[i];
 
-    // output = i;
-    output[i].position = node.position;
     output[i].edges = node.edges;
-    output[i].neighbors = node.neighbors;
   }
 }

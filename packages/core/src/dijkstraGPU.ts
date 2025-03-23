@@ -1,13 +1,26 @@
 import { BufferData } from './buffer';
 import shader from './compute.wgsl?raw';
 import type { Graph } from './Graph';
+import type { Node } from './Node';
 
-export type GreedySpannerGpuParams = {
-	device: GPUDevice;
-	graph: Graph;
+type Path = {
+	nodes: Node[];
+	length: number;
 };
 
-export async function greedySpannerGPU({ device, graph }: GreedySpannerGpuParams): Promise<Graph> {
+export type DijkstraGpuParams = {
+	device: GPUDevice;
+	graph: Graph;
+	start: Node;
+	end: Node;
+};
+
+export async function dijkstraGPU({
+	device,
+	graph,
+	start,
+	end,
+}: DijkstraGpuParams): Promise<Path | null> {
 	const pipeline = await device.createComputePipelineAsync({
 		label: 'compute pipeline',
 		layout: 'auto',
@@ -16,59 +29,48 @@ export async function greedySpannerGPU({ device, graph }: GreedySpannerGpuParams
 		},
 	});
 
-	const length = 4;
+	const nodesBufferData = new BufferData({ edges: 'uint' }, graph.nodes.size);
+	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, graph.edges.size);
 
-	const nodeBufferData = new BufferData(
-		{
-			position: 'vec2u',
-			edges: 'uint',
-			neighbors: 'uint',
-		},
-		length
-	);
-	for (let i = 0; i < length; i++) {
-		nodeBufferData.set(
-			{
-				position: [1 * i, 2 * i],
-				edges: 10 * i,
-				neighbors: 100 * i,
-			},
-			i
-		);
+	const nodes = [...graph.nodes];
+	const edges = [...graph.edges];
+
+	let edgeIndex = 0;
+	for (let i = 0; i < nodes.length; i++) {
+		nodesBufferData.set({ edges: edgeIndex }, i);
+
+		const node = nodes[i]!;
+		const neighbors = edges
+			.filter(({ start, end }) => start === node || end === node)
+			.map(({ start, end, weight }) => ({ node: start === node ? end : start, weight }));
+
+		for (let j = 0; j < neighbors.length; j++) {
+			const neighbor = neighbors[j]!;
+
+			const endIndex = nodes.indexOf(neighbor.node);
+			if (endIndex === -1) throw new Error('Node not found');
+
+			edgesBufferData.set({ end: endIndex, weight: neighbor.weight }, edgeIndex);
+
+			edgeIndex++;
+		}
 	}
+
+	console.log(nodesBufferData.buffer);
 
 	const nodeBuffer = device.createBuffer({
-		size: nodeBufferData.buffer.byteLength,
+		size: nodesBufferData.buffer.byteLength,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	device.queue.writeBuffer(nodeBuffer, 0, nodeBufferData.buffer);
-
-	const edgeBufferData = new BufferData(
-		{
-			start: 'uint',
-			end: 'uint',
-			weight: 'uint',
-		},
-		length
-	);
-	for (let i = 0; i < length; i++) {
-		edgeBufferData.set(
-			{
-				start: 1,
-				end: 10,
-				weight: 10,
-			},
-			i
-		);
-	}
+	device.queue.writeBuffer(nodeBuffer, 0, nodesBufferData.buffer);
 
 	const edgeBuffer = device.createBuffer({
-		size: edgeBufferData.buffer.byteLength,
+		size: edgesBufferData.buffer.byteLength,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	device.queue.writeBuffer(edgeBuffer, 0, edgeBufferData.buffer);
+	device.queue.writeBuffer(edgeBuffer, 0, edgesBufferData.buffer);
 
 	const outputBuffer = device.createBuffer({
 		size: 1024,
@@ -114,6 +116,4 @@ export async function greedySpannerGPU({ device, graph }: GreedySpannerGpuParams
 	await outputReadBuffer.mapAsync(GPUMapMode.READ);
 	const output = new Uint32Array(outputReadBuffer.getMappedRange());
 	console.log(output);
-
-	return graph;
 }
