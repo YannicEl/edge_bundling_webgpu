@@ -1,5 +1,6 @@
-import { BufferData } from './buffer';
+import { BufferData } from './BufferData';
 import shader from './compute.wgsl?raw';
+import { createGPUBuffer } from './GPUBuffer';
 import type { Graph } from './Graph';
 import type { Node } from './Node';
 
@@ -26,51 +27,46 @@ export async function dijkstraGPU({
 		layout: 'auto',
 		compute: {
 			module: device.createShaderModule({ code: shader }),
+			constants: {
+				start: 5,
+				end: 1,
+			},
 		},
 	});
 
-	const nodesBufferData = new BufferData({ edges: 'uint' }, graph.nodes.size);
-	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, graph.edges.size);
+	const list = graph.toAdjacencyList();
+	const nodesBufferData = new BufferData({ edges: 'uint', visited: 'uint' }, list.nodes.length);
+	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, list.edges.length);
+	const distancesBufferData = new BufferData({ value: 'float', last: 'uint' }, list.nodes.length);
 
-	const nodes = [...graph.nodes];
-	const edges = [...graph.edges];
-
-	let edgeIndex = 0;
-	for (let i = 0; i < nodes.length; i++) {
-		nodesBufferData.set({ edges: edgeIndex }, i);
-
-		const node = nodes[i]!;
-		const neighbors = edges
-			.filter(({ start, end }) => start === node || end === node)
-			.map(({ start, end, weight }) => ({ node: start === node ? end : start, weight }));
-
-		for (let j = 0; j < neighbors.length; j++) {
-			const neighbor = neighbors[j]!;
-
-			const endIndex = nodes.indexOf(neighbor.node);
-			if (endIndex === -1) throw new Error('Node not found');
-
-			edgesBufferData.set({ end: endIndex, weight: neighbor.weight }, edgeIndex);
-
-			edgeIndex++;
-		}
+	for (let i = 0; i < list.nodes.length; i++) {
+		const node = list.nodes[i]!;
+		nodesBufferData.set({ edges: node, visited: 0 }, i);
+		distancesBufferData.set({ value: -1 }, i);
 	}
 
-	console.log(nodesBufferData.buffer);
+	for (let i = 0; i < list.edges.length; i++) {
+		const edge = list.edges[i]!;
+		edgesBufferData.set({ end: edge.end, weight: edge.weight }, i);
+	}
 
-	const nodeBuffer = device.createBuffer({
-		size: nodesBufferData.buffer.byteLength,
+	const nodesBuffer = createGPUBuffer({
+		device,
+		data: nodesBufferData,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	device.queue.writeBuffer(nodeBuffer, 0, nodesBufferData.buffer);
-
-	const edgeBuffer = device.createBuffer({
-		size: edgesBufferData.buffer.byteLength,
+	const edgesBuffer = createGPUBuffer({
+		device,
+		data: edgesBufferData,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	device.queue.writeBuffer(edgeBuffer, 0, edgesBufferData.buffer);
+	const distancesBuffer = createGPUBuffer({
+		device,
+		data: distancesBufferData,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+	});
 
 	const outputBuffer = device.createBuffer({
 		size: 1024,
@@ -86,9 +82,10 @@ export async function dijkstraGPU({
 		label: 'Compute Bind Group',
 		layout: pipeline.getBindGroupLayout(0),
 		entries: [
-			{ binding: 1, resource: { buffer: nodeBuffer } },
-			{ binding: 2, resource: { buffer: edgeBuffer } },
-			{ binding: 3, resource: { buffer: outputBuffer } },
+			{ binding: 1, resource: { buffer: nodesBuffer } },
+			{ binding: 2, resource: { buffer: edgesBuffer } },
+			{ binding: 3, resource: { buffer: distancesBuffer } },
+			{ binding: 4, resource: { buffer: outputBuffer } },
 		],
 	});
 
@@ -102,11 +99,11 @@ export async function dijkstraGPU({
 	pass.end();
 
 	encoder.copyBufferToBuffer(
-		outputBuffer,
+		distancesBuffer,
 		0, // Source offset
 		outputReadBuffer,
 		0, // Destination offset
-		1024
+		48
 	);
 
 	// Finish encoding and submit the commands
@@ -114,6 +111,7 @@ export async function dijkstraGPU({
 	device.queue.submit([commandBuffer]);
 
 	await outputReadBuffer.mapAsync(GPUMapMode.READ);
-	const output = new Uint32Array(outputReadBuffer.getMappedRange());
+	// const output = new Uint32Array(outputReadBuffer.getMappedRange());
+	const output = new Float32Array(outputReadBuffer.getMappedRange());
 	console.log(output);
 }

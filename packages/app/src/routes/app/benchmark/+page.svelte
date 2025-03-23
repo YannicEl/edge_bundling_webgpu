@@ -4,15 +4,20 @@
 	import { Graph } from '@bachelor/core/Graph';
 	import Canvas from '$lib/components/Canvas.svelte';
 	import { dijkstraGPU } from '@bachelor/core/dijkstraGPU';
+	import { drawGraph } from '$lib/canvas';
 
 	let canvas: Canvas;
 
 	onMount(async () => {
-		console.log(canvas.lol());
+		const ctx = canvas.getContext();
+		if (!ctx) return;
+
 		const { device } = await initWebGPU();
 
 		const graphJSON = await import('$lib/data/graphs/simple.json');
 		const graph = Graph.fromJSON(graphJSON);
+
+		drawGraph(ctx, graph);
 
 		const nodes = [...graph.nodes];
 

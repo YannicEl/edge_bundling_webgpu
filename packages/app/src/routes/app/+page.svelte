@@ -3,6 +3,7 @@
 	import { edgePathBundling } from '@bachelor/core/edgePathBundling';
 	import { drawLine, drawCircle, drawBezierCurve } from '@bachelor/core/canvas';
 	import { onMount } from 'svelte';
+	import { drawGraph } from '$lib/canvas';
 
 	let canvas = $state<HTMLCanvasElement | null>();
 
@@ -37,18 +38,6 @@
 		});
 		console.timeEnd('Draw');
 	});
-
-	function drawGraph(ctx: CanvasRenderingContext2D, graph: Graph): void {
-		ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
-
-		graph.edges.forEach(({ start, end }) => {
-			drawLine(ctx, start.x, start.y, end.x, end.y, { width: 1, color: 'black' });
-		});
-
-		graph.nodes.forEach((vertice) => {
-			drawCircle(ctx, vertice.x, vertice.y, { radius: 5, color: 'blue' });
-		});
-	}
 </script>
 
 <canvas bind:this={canvas} class="flex flex-1"></canvas>

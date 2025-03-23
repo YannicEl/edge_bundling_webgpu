@@ -22,8 +22,11 @@ export function dijkstra(graph: Graph, start: Node, end: Node): Path | null {
 	distances.set(start, 0);
 
 	while (unvisited.size > 0) {
-		const current = Array.from(unvisited).reduce((min, vertex) => {
-			return distances.get(vertex)! < distances.get(min)! ? vertex : min;
+		let current = null as unknown as Node;
+		unvisited.forEach((node) => {
+			if (!current || distances.get(node)! < distances.get(current)!) {
+				current = node;
+			}
 		});
 
 		if (current === end) {

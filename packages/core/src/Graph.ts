@@ -6,6 +6,11 @@ export type GraphJSON = {
 	edges: [number, number][];
 };
 
+export type AdjacencyList = {
+	nodes: number[];
+	edges: { end: number; weight: number }[];
+};
+
 export class Graph {
 	nodes: Set<Node>;
 	edges: Set<Edge>;
@@ -44,5 +49,34 @@ export class Graph {
 				nodes.indexOf(end),
 			]),
 		};
+	}
+
+	toAdjacencyList(): AdjacencyList {
+		const nodes = [...this.nodes];
+		const edges = [...this.edges];
+		const list: AdjacencyList = { nodes: [], edges: [] };
+
+		let edgeIndex = 0;
+		for (let i = 0; i < this.nodes.size; i++) {
+			list.nodes.push(edgeIndex);
+
+			const node = nodes[i]!;
+			const neighbors = edges
+				.filter(({ start, end }) => start === node || end === node)
+				.map(({ start, end, weight }) => ({ node: start === node ? end : start, weight }));
+
+			for (let j = 0; j < neighbors.length; j++) {
+				const neighbor = neighbors[j]!;
+
+				const nodeIndex = nodes.findIndex((n) => n === neighbor.node);
+				if (nodeIndex === -1) throw new Error('Node not found');
+
+				list.edges.push({ end: nodeIndex, weight: neighbor.weight });
+
+				edgeIndex++;
+			}
+		}
+
+		return list;
 	}
 }

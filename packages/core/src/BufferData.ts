@@ -12,10 +12,12 @@ type DataType =
 	| 'vec4u'
 	| 'vec4f';
 
-type TypedArrayConstructor =
+export type TypedArrayConstructor =
 	| Float32ArrayConstructor
 	| Int32ArrayConstructor
 	| Uint32ArrayConstructor;
+
+export type TypedArray = Float32Array | Int32Array | Uint32Array;
 
 type SetParams<T extends Record<string, DataType>> = {
 	[K in keyof T]: T[K] extends 'int' | 'uint' | 'float'
@@ -31,20 +33,20 @@ type SetParams<T extends Record<string, DataType>> = {
 
 export const DATA_TYPE_SIZES: Record<
 	DataType,
-	{ size: number; align?: number; typedArrayConstructor: TypedArrayConstructor }
+	{ size: number; align: number; typedArrayConstructor: TypedArrayConstructor }
 > = {
-	int: { size: 4, typedArrayConstructor: Int32Array },
-	uint: { size: 4, typedArrayConstructor: Uint32Array },
-	float: { size: 4, typedArrayConstructor: Float32Array },
+	int: { size: 4, align: 4, typedArrayConstructor: Int32Array },
+	uint: { size: 4, align: 4, typedArrayConstructor: Uint32Array },
+	float: { size: 4, align: 4, typedArrayConstructor: Float32Array },
 	vec2i: { size: 8, align: 8, typedArrayConstructor: Int32Array },
 	vec2u: { size: 8, align: 8, typedArrayConstructor: Uint32Array },
 	vec2f: { size: 8, align: 8, typedArrayConstructor: Float32Array },
 	vec3i: { size: 12, align: 16, typedArrayConstructor: Int32Array },
 	vec3u: { size: 12, align: 16, typedArrayConstructor: Uint32Array },
 	vec3f: { size: 12, align: 16, typedArrayConstructor: Float32Array },
-	vec4i: { size: 16, typedArrayConstructor: Int32Array },
-	vec4u: { size: 16, typedArrayConstructor: Uint32Array },
-	vec4f: { size: 16, typedArrayConstructor: Float32Array },
+	vec4i: { size: 16, align: 16, typedArrayConstructor: Int32Array },
+	vec4u: { size: 16, align: 16, typedArrayConstructor: Uint32Array },
+	vec4f: { size: 16, align: 16, typedArrayConstructor: Float32Array },
 } as const;
 
 export type UniformBufferParams<T> = {
@@ -56,7 +58,7 @@ export type Offsets<T> = Record<
 	{ typedArrayConstructor: TypedArrayConstructor; byteOffset: number; length: number }
 >;
 
-export class BufferData<T extends Record<string, DataType>> {
+export class BufferData<T extends Record<string, DataType> = any> {
 	buffer: ArrayBuffer;
 	structLength: number;
 
@@ -68,11 +70,9 @@ export class BufferData<T extends Record<string, DataType>> {
 			const { size, align, typedArrayConstructor } = DATA_TYPE_SIZES[params[key]];
 
 			let padding = 0;
-			if (align) {
-				const modulo = currentOffset % align;
-				if (modulo > 0) {
-					padding = align - modulo;
-				}
+			const modulo = currentOffset % align;
+			if (modulo > 0) {
+				padding = align - modulo;
 			}
 
 			this.offsets[key] = {
@@ -80,10 +80,13 @@ export class BufferData<T extends Record<string, DataType>> {
 				byteOffset: currentOffset + padding,
 				length: size / 4,
 			};
+
 			currentOffset += size + padding;
 		}
 
-		const byteLength = currentOffset + ((16 - (currentOffset % 16)) % 16);
+		let byteLength = currentOffset;
+		if (byteLength > 16) byteLength += 16 - (currentOffset % 16);
+
 		this.buffer = new ArrayBuffer(byteLength * length);
 		this.structLength = byteLength;
 	}
@@ -91,7 +94,7 @@ export class BufferData<T extends Record<string, DataType>> {
 	set(values: Partial<SetParams<T>>, index = 0): void {
 		for (const key in values) {
 			const value = values[key];
-			if (value) {
+			if (value !== undefined) {
 				const { typedArrayConstructor, byteOffset, length } = this.offsets[key];
 				const view = new typedArrayConstructor(
 					this.buffer,
@@ -101,5 +104,10 @@ export class BufferData<T extends Record<string, DataType>> {
 				view.set(Array.isArray(value) ? value : [value]);
 			}
 		}
+	}
+
+	get(key: keyof T, index = 0): TypedArray {
+		const { typedArrayConstructor, byteOffset, length } = this.offsets[key];
+		return new typedArrayConstructor(this.buffer, index * this.structLength + byteOffset, length);
 	}
 }

@@ -1,4 +1,4 @@
-import { BufferData } from './buffer';
+import { BufferData } from './BufferData';
 import shader from './compute.wgsl?raw';
 import type { Graph } from './Graph';
 

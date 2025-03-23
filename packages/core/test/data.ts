@@ -198,3 +198,19 @@ export const shortestPath = [
 		length: 94.28961171848935,
 	},
 ] as const;
+
+export const adjacencyList = [
+	{
+		file: 'simple',
+		nodes: [0, 3, 5, 7, 10, 12],
+		edges: [1, 5, 3, 0, 2, 1, 3, 0, 2, 4, 3, 5, 0, 4],
+	},
+	{
+		file: 'example',
+		nodes: [0, 4, 8, 10, 12, 14, 16, 18, 20, 24, 27, 30],
+		edges: [
+			1, 11, 10, 8, 0, 2, 11, 8, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 1, 0, 8, 10, 11, 9, 11,
+			0, 10, 0, 1, 9,
+		],
+	},
+] as const;

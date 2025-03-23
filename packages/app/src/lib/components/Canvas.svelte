@@ -7,7 +7,11 @@
 	} & SvelteHTMLElements['canvas'];
 	let { onResize, ...rest }: Props = $props();
 
-	let canvas = $state<HTMLCanvasElement | null>();
+	let canvas = $state<HTMLCanvasElement>();
+
+	export function getContext(): CanvasRenderingContext2D | undefined | null {
+		return canvas?.getContext('2d');
+	}
 
 	const resizeObserver = new ResizeObserver((entries) => {
 		for (const entry of entries) {
@@ -19,10 +23,6 @@
 			}
 		}
 	});
-
-	export function lol(): string {
-		return 'lol';
-	}
 
 	onMount(() => {
 		if (canvas) {
