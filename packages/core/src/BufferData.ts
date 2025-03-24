@@ -58,13 +58,15 @@ export type Offsets<T> = Record<
 	{ typedArrayConstructor: TypedArrayConstructor; byteOffset: number; length: number }
 >;
 
+export type DataView<T> = Record<keyof T, TypedArray>;
+
 export class BufferData<T extends Record<string, DataType> = any> {
 	buffer: ArrayBuffer;
-	structLength: number;
-
-	offsets = {} as Offsets<T>;
+	views = [] as DataView<T>[];
 
 	constructor(params: UniformBufferParams<T>, length = 1) {
+		const offsets = {} as Offsets<T>;
+
 		let currentOffset = 0;
 		for (const key in params) {
 			const { size, align, typedArrayConstructor } = DATA_TYPE_SIZES[params[key]];
@@ -75,7 +77,7 @@ export class BufferData<T extends Record<string, DataType> = any> {
 				padding = align - modulo;
 			}
 
-			this.offsets[key] = {
+			offsets[key] = {
 				typedArrayConstructor,
 				byteOffset: currentOffset + padding,
 				length: size / 4,
@@ -88,26 +90,32 @@ export class BufferData<T extends Record<string, DataType> = any> {
 		if (byteLength > 16) byteLength += 16 - (currentOffset % 16);
 
 		this.buffer = new ArrayBuffer(byteLength * length);
-		this.structLength = byteLength;
+
+		for (let i = 0; i < length; i++) {
+			const view = {} as DataView<T>;
+
+			for (const key in params) {
+				const { typedArrayConstructor, byteOffset, length } = offsets[key];
+				view[key] = new typedArrayConstructor(this.buffer, i * byteLength + byteOffset, length);
+			}
+
+			this.views.push(view);
+		}
 	}
 
 	set(values: Partial<SetParams<T>>, index = 0): void {
 		for (const key in values) {
 			const value = values[key];
-			if (value !== undefined) {
-				const { typedArrayConstructor, byteOffset, length } = this.offsets[key];
-				const view = new typedArrayConstructor(
-					this.buffer,
-					index * this.structLength + byteOffset,
-					length
-				);
-				view.set(Array.isArray(value) ? value : [value]);
-			}
+			if (value === undefined) continue;
+
+			const view = this.get(key, index);
+			view.set(Array.isArray(value) ? value : [value]);
 		}
 	}
 
 	get(key: keyof T, index = 0): TypedArray {
-		const { typedArrayConstructor, byteOffset, length } = this.offsets[key];
-		return new typedArrayConstructor(this.buffer, index * this.structLength + byteOffset, length);
+		const view = this.views[index]?.[key];
+		if (!view) throw new Error(`Could not find view for key: ${key.toString()} at index: ${index}`);
+		return view;
 	}
 }
