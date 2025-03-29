@@ -64,7 +64,7 @@ export class BufferData<T extends Record<string, DataType> = any> {
 	buffer: ArrayBuffer;
 	views = [] as DataView<T>[];
 
-	constructor(params: UniformBufferParams<T>, length = 1) {
+	constructor(params: UniformBufferParams<T>, length = 1, buffer?: ArrayBuffer) {
 		const offsets = {} as Offsets<T>;
 
 		let currentOffset = 0;
@@ -89,7 +89,7 @@ export class BufferData<T extends Record<string, DataType> = any> {
 		let byteLength = currentOffset;
 		if (byteLength > 16) byteLength += 16 - (currentOffset % 16);
 
-		this.buffer = new ArrayBuffer(byteLength * length);
+		this.buffer = buffer ?? new ArrayBuffer(byteLength * length);
 
 		for (let i = 0; i < length; i++) {
 			const view = {} as DataView<T>;

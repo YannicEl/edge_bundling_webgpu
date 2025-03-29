@@ -69,12 +69,12 @@ export async function dijkstraGPU({
 	});
 
 	const outputBuffer = device.createBuffer({
-		size: 1024,
+		size: 24,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
 	});
 
 	const outputReadBuffer = device.createBuffer({
-		size: 1024,
+		size: 24,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 
@@ -99,11 +99,11 @@ export async function dijkstraGPU({
 	pass.end();
 
 	encoder.copyBufferToBuffer(
-		distancesBuffer,
+		outputBuffer,
 		0, // Source offset
 		outputReadBuffer,
 		0, // Destination offset
-		48
+		24
 	);
 
 	// Finish encoding and submit the commands
@@ -111,7 +111,26 @@ export async function dijkstraGPU({
 	device.queue.submit([commandBuffer]);
 
 	await outputReadBuffer.mapAsync(GPUMapMode.READ);
-	// const output = new Uint32Array(outputReadBuffer.getMappedRange());
-	const output = new Float32Array(outputReadBuffer.getMappedRange());
-	console.log(output);
+
+	const buffer = await outputReadBuffer.getMappedRange();
+
+	const outputDataBuffer = new BufferData(
+		{
+			hallo: 'uint',
+			distance: 'float',
+			zwallo: 'int',
+			drallo: 'float',
+			float: 'float',
+			unsigned: 'uint',
+		},
+		1,
+		buffer
+	);
+
+	console.log(outputDataBuffer);
+	console.log('Distance:', ...outputDataBuffer.get('distance'));
+	console.log('Hallo:', ...outputDataBuffer.get('hallo'));
+	console.log('Zwallo:', ...outputDataBuffer.get('zwallo'));
+	console.log('Float:', ...outputDataBuffer.get('float'));
+	console.log('Unsigned:', ...outputDataBuffer.get('unsigned'));
 }

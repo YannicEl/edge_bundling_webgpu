@@ -24,8 +24,6 @@
 		console.time('dijkstraGPU');
 		const path = await dijkstraGPU({ device, graph, start: nodes[0]!, end: nodes[2]! });
 		console.timeEnd('dijkstraGPU');
-
-		console.log(path);
 	});
 </script>
 
