@@ -5,3 +5,4 @@
 21.03.2025 6h implementing EPB algorithm in WebGPU
 22.03.2025 6h implementing EPB algorithm in WebGPU + test setup + ci setup
 23.03.2025 6h implementing EPB algorithm in WebGPU
+29.03.2025 6h implementing EPB algorithm in WebGPU done but it is really slow

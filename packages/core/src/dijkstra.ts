@@ -9,10 +9,10 @@ export function dijkstra(graph: Graph, start: Node, end: Node): Path | null {
 	const previous = new Map<Node, Node | null>();
 	const distances = new Map<Node, number>();
 
-	for (const vertex of graph.nodes) {
-		unvisited.add(vertex);
-		previous.set(vertex, null);
-		distances.set(vertex, Infinity);
+	for (const node of graph.nodes) {
+		unvisited.add(node);
+		previous.set(node, null);
+		distances.set(node, Infinity);
 	}
 
 	distances.set(start, 0);
