@@ -34,31 +34,38 @@ override end: u32;
   @builtin(global_invocation_id) pixel : vec3<u32>,
   @builtin(num_workgroups) dimensions: vec3<u32>
 ) {
-  distances[start].value = 1.0;
+  distances[start].value = 0.0;
 
-  getCurrentNode();
+  let one = 1.0;
+  let zero = 0.0;
+  let infinity = one / zero;
 
   var visited = 0u;
-  var lol = 0.0;
   while(visited < arrayLength(&nodes)) {
-    // let current = getCurrentNode();
-    let current = 0u;
+    let current = getCurrentNode();
 
     if(current == end) {
       output.distance = distances[end].value;
     }
 
-    for(var i = nodes[current].edges; i < nodes[current + 1].edges; i++) {
+    let startEdge = nodes[current].edges;
+    var endEdge: u32;
+    if(current + 1 < arrayLength(&nodes)) {
+      endEdge = nodes[current + 1].edges;
+    } else {
+      endEdge = arrayLength(&edges);
+    }
+
+    for(var i = startEdge; i < endEdge; i++) {
       let edge = edges[i];
 
       let neighbor = edge.end;
-      if(nodes[neighbor].visited == 0) {
+      if(nodes[neighbor].visited == 1) {
         continue;
       }
 
-      let distance = max(distances[edge.end].value, 0) + edge.weight;
-      
-      if(distance < max(distances[neighbor].value, 0)) {
+      let distance = distances[current].value + edge.weight;
+      if (distance < distances[neighbor].value) {
         distances[neighbor].value = distance;
         distances[neighbor].last = current;
       }
@@ -66,7 +73,6 @@ override end: u32;
 
     nodes[current].visited = 1;
     visited++;
-    lol = lol +1;
   }
 }
 
@@ -75,7 +81,6 @@ fn getCurrentNode() -> u32 {
   var first = true;
 
   for (var i = 0u; i < arrayLength(&nodes); i++) {
-      output.unsigned = i;
     let node = nodes[i];
     if(node.visited == 1) {
       continue;
@@ -89,16 +94,6 @@ fn getCurrentNode() -> u32 {
 
     let distance_node = distances[i];
     let distance_current = distances[current];
-
-    if(i == 5) {
-      // output.unsigned = current;
-    }
-
-    if(distance_current.value == -1) {
-      output.zwallo ++;
-      current = i;
-      continue;
-    }
 
     if(distance_node.value < distance_current.value) {
       current = i;

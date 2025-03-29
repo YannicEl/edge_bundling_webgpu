@@ -35,7 +35,6 @@ export class Graph {
 			}
 		}
 
-		console.log(`Imported graph with ${nodes.length} nodes and ${edges.length} edges`);
 		return new Graph(nodes, edges);
 	}
 

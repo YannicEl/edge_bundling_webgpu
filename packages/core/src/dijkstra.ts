@@ -1,10 +1,6 @@
 import type { Graph } from './Graph';
 import type { Node } from './Node';
-
-type Path = {
-	nodes: Node[];
-	length: number;
-};
+import type { Path } from './path';
 
 export function dijkstra(graph: Graph, start: Node, end: Node): Path | null {
 	if (graph.edges.size === 0) return null;

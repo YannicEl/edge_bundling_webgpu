@@ -3,11 +3,7 @@ import shader from './compute.wgsl?raw';
 import { createGPUBuffer } from './GPUBuffer';
 import type { Graph } from './Graph';
 import type { Node } from './Node';
-
-type Path = {
-	nodes: Node[];
-	length: number;
-};
+import type { Path } from './path';
 
 export type DijkstraGpuParams = {
 	device: GPUDevice;
@@ -22,14 +18,21 @@ export async function dijkstraGPU({
 	start,
 	end,
 }: DijkstraGpuParams): Promise<Path | null> {
+	const nodes = [...graph.nodes];
+	const startIndex = nodes.indexOf(start);
+	const endIndex = nodes.indexOf(end);
+	if (startIndex === -1 || endIndex === -1) {
+		throw new Error('Node not found in graph');
+	}
+
 	const pipeline = await device.createComputePipelineAsync({
 		label: 'compute pipeline',
 		layout: 'auto',
 		compute: {
 			module: device.createShaderModule({ code: shader }),
 			constants: {
-				start: 5,
-				end: 1,
+				start: startIndex,
+				end: endIndex,
 			},
 		},
 	});
@@ -42,7 +45,7 @@ export async function dijkstraGPU({
 	for (let i = 0; i < list.nodes.length; i++) {
 		const node = list.nodes[i]!;
 		nodesBufferData.set({ edges: node, visited: 0 }, i);
-		distancesBufferData.set({ value: -1 }, i);
+		distancesBufferData.set({ value: Infinity }, i);
 	}
 
 	for (let i = 0; i < list.edges.length; i++) {
@@ -133,4 +136,15 @@ export async function dijkstraGPU({
 	console.log('Zwallo:', ...outputDataBuffer.get('zwallo'));
 	console.log('Float:', ...outputDataBuffer.get('float'));
 	console.log('Unsigned:', ...outputDataBuffer.get('unsigned'));
+
+	const distance = outputDataBuffer.get('distance')[0];
+
+	if (distance === undefined || distance === Infinity) {
+		return null;
+	} else {
+		return {
+			nodes: [],
+			length: distance,
+		};
+	}
 }
