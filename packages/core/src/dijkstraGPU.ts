@@ -42,12 +42,14 @@ export async function dijkstraGPU({
 	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, list.edges.length);
 	const distancesBufferData = new BufferData({ value: 'float', last: 'uint' }, list.nodes.length);
 	const visitedBufferData = new BufferData({ visited: 'uint' }, list.nodes.length);
+	const pathBufferData = new BufferData({ node: 'uint' }, list.nodes.length);
 
 	for (let i = 0; i < list.nodes.length; i++) {
 		const node = list.nodes[i]!;
 		nodesBufferData.set({ edges: node }, i);
 		visitedBufferData.set({ visited: 0 }, i);
 		distancesBufferData.set({ value: Infinity }, i);
+		pathBufferData.set({ node: 0 }, i);
 	}
 
 	for (let i = 0; i < list.edges.length; i++) {
@@ -79,13 +81,24 @@ export async function dijkstraGPU({
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
+	const pathBuffer = createGPUBuffer({
+		device,
+		data: pathBufferData,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+	});
+
 	const outputBuffer = device.createBuffer({
-		size: 24,
+		size: 64,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
 	});
 
 	const outputReadBuffer = device.createBuffer({
-		size: 24,
+		size: 64,
+		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+	});
+
+	const pathReadBuffer = device.createBuffer({
+		size: pathBufferData.buffer.byteLength,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 
@@ -97,7 +110,8 @@ export async function dijkstraGPU({
 			{ binding: 2, resource: { buffer: edgesBuffer } },
 			{ binding: 3, resource: { buffer: distancesBuffer } },
 			{ binding: 4, resource: { buffer: visitedBuffer } },
-			{ binding: 5, resource: { buffer: outputBuffer } },
+			{ binding: 5, resource: { buffer: pathBuffer } },
+			{ binding: 6, resource: { buffer: outputBuffer } },
 		],
 	});
 
@@ -110,28 +124,25 @@ export async function dijkstraGPU({
 	pass.dispatchWorkgroups(1);
 	pass.end();
 
-	encoder.copyBufferToBuffer(
-		outputBuffer,
-		0, // Source offset
-		outputReadBuffer,
-		0, // Destination offset
-		24
-	);
+	encoder.copyBufferToBuffer(outputBuffer, 0, outputReadBuffer, 0, 64);
+	encoder.copyBufferToBuffer(pathBuffer, 0, pathReadBuffer, 0, pathBufferData.buffer.byteLength);
 
 	// Finish encoding and submit the commands
 	const commandBuffer = encoder.finish();
 	device.queue.submit([commandBuffer]);
 
 	await outputReadBuffer.mapAsync(GPUMapMode.READ);
+	await pathReadBuffer.mapAsync(GPUMapMode.READ);
 
 	const buffer = await outputReadBuffer.getMappedRange();
+	const buffer2 = await pathReadBuffer.getMappedRange();
 
 	const outputDataBuffer = new BufferData(
 		{
+			length: 'float',
 			hallo: 'uint',
-			distance: 'float',
-			zwallo: 'int',
-			drallo: 'float',
+			zwallo: 'uint',
+			drallo: 'uint',
 			float: 'float',
 			unsigned: 'uint',
 		},
@@ -139,20 +150,42 @@ export async function dijkstraGPU({
 		buffer
 	);
 
+	const test = new BufferData(
+		{
+			node: 'uint',
+		},
+		list.nodes.length,
+		buffer2
+	);
+
+	console.log({ test });
+
 	console.log(outputDataBuffer);
-	console.log('Distance:', ...outputDataBuffer.get('distance'));
+	console.log('Distance:', ...outputDataBuffer.get('length'));
 	console.log('Hallo:', ...outputDataBuffer.get('hallo'));
 	console.log('Zwallo:', ...outputDataBuffer.get('zwallo'));
+	console.log('Drallo:', ...outputDataBuffer.get('drallo'));
 	console.log('Float:', ...outputDataBuffer.get('float'));
 	console.log('Unsigned:', ...outputDataBuffer.get('unsigned'));
 
-	const distance = outputDataBuffer.get('distance')[0];
+	const [distance] = outputDataBuffer.get('length');
+	const shortestPath: number[] = [];
+	let stop = false;
+	test.views.forEach((node) => {
+		const pathNode = node.node.at(0)!;
+
+		if (pathNode === list.nodes.length) {
+			stop = true;
+		}
+
+		if (!stop) shortestPath.unshift(pathNode);
+	});
 
 	if (distance === undefined || distance === Infinity) {
 		return null;
 	} else {
 		return {
-			nodes: [],
+			nodes: shortestPath.map((index) => nodes[index]!),
 			length: distance,
 		};
 	}

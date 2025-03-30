@@ -15,7 +15,7 @@
 
 		const { device } = await initWebGPU();
 
-		const graphJSON = await import('$lib/data/graphs/airtraffic.json');
+		const graphJSON = await import('$lib/data/graphs/simple.json');
 		const graph = Graph.fromJSON(graphJSON);
 
 		drawGraph(ctx, graph);
@@ -23,11 +23,11 @@
 		const nodes = [...graph.nodes];
 
 		console.time('dijkstraGPU');
-		const path = await dijkstraGPU({ device, graph, start: nodes[3]!, end: nodes[0]! });
+		const path = await dijkstraGPU({ device, graph, start: nodes[0]!, end: nodes[2]! });
 		console.timeEnd('dijkstraGPU');
 
 		console.time('dijkstra');
-		const path_2 = dijkstra(graph, nodes[3]!, nodes[0]!);
+		const path_2 = dijkstra(graph, nodes[0]!, nodes[2]!);
 		console.timeEnd('dijkstra');
 	});
 </script>

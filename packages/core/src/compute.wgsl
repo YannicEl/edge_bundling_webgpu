@@ -13,10 +13,10 @@ struct Distance {
 }
 
 struct Output {
-  hallo: i32,
-  distance: f32,
-  zwallo: i32,
-  drallo: i32,   
+  length: f32,
+  hallo: u32,
+  zwallo: u32,
+  drallo: u32,   
   float: f32,   
   unsigned: u32,
 }
@@ -25,27 +25,34 @@ struct Output {
 @group(0) @binding(2) var<storage, read> edges: array<Edge>;
 @group(0) @binding(3) var<storage, read_write> distances: array<Distance>;
 @group(0) @binding(4) var<storage, read_write> visited: array<u32>;
-@group(0) @binding(5) var<storage, read_write> output: Output;
+@group(0) @binding(5) var<storage, read_write> path: array<u32>;
+@group(0) @binding(6) var<storage, read_write> output: Output;
 
 override start: u32;  
 override end: u32;  
 
 @compute @workgroup_size(1) fn compute(
   @builtin(global_invocation_id) pixel : vec3<u32>,
-  @builtin(num_workgroups) dimensions: vec3<u32>
 ) {
   distances[start].value = 0.0;
-
-  let one = 1.0;
-  let zero = 0.0;
-  let infinity = one / zero;
 
   var nrVisited = 0u;
   while(nrVisited < arrayLength(&nodes)) {
     let current = getCurrentNode();
 
     if(current == end) {
-      output.distance = distances[end].value;
+      output.length = distances[end].value;
+      path[0] = end;
+
+      var temp = end;
+      var i = 1u;
+      while(temp != start) {
+        temp = distances[temp].last;
+        path[i] = temp;
+        i++;
+      }
+
+      path[i] = arrayLength(&nodes);
     }
 
     let startEdge = nodes[current].edges;

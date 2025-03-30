@@ -30,6 +30,7 @@ describe('Shortest Path', () => {
 		if (!path) throw new Error('No shortest path found');
 
 		expect(path.length.toFixed(3)).toBe(parmas.length.toFixed(3));
+		expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(parmas.path);
 	});
 
 	test.each(shortestPath)('Dijkstra %#', async (parmas) => {
