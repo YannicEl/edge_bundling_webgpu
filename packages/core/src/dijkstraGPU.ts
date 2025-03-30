@@ -38,13 +38,15 @@ export async function dijkstraGPU({
 	});
 
 	const list = graph.toAdjacencyList();
-	const nodesBufferData = new BufferData({ edges: 'uint', visited: 'uint' }, list.nodes.length);
+	const nodesBufferData = new BufferData({ edges: 'uint' }, list.nodes.length);
 	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, list.edges.length);
 	const distancesBufferData = new BufferData({ value: 'float', last: 'uint' }, list.nodes.length);
+	const visitedBufferData = new BufferData({ visited: 'uint' }, list.nodes.length);
 
 	for (let i = 0; i < list.nodes.length; i++) {
 		const node = list.nodes[i]!;
-		nodesBufferData.set({ edges: node, visited: 0 }, i);
+		nodesBufferData.set({ edges: node }, i);
+		visitedBufferData.set({ visited: 0 }, i);
 		distancesBufferData.set({ value: Infinity }, i);
 	}
 
@@ -71,6 +73,12 @@ export async function dijkstraGPU({
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
+	const visitedBuffer = createGPUBuffer({
+		device,
+		data: visitedBufferData,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+	});
+
 	const outputBuffer = device.createBuffer({
 		size: 24,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
@@ -88,7 +96,8 @@ export async function dijkstraGPU({
 			{ binding: 1, resource: { buffer: nodesBuffer } },
 			{ binding: 2, resource: { buffer: edgesBuffer } },
 			{ binding: 3, resource: { buffer: distancesBuffer } },
-			{ binding: 4, resource: { buffer: outputBuffer } },
+			{ binding: 4, resource: { buffer: visitedBuffer } },
+			{ binding: 5, resource: { buffer: outputBuffer } },
 		],
 	});
 

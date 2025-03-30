@@ -1,6 +1,5 @@
 struct Node {
   edges: u32,
-  visited: u32,
 }
 
 struct Edge {
@@ -22,10 +21,11 @@ struct Output {
   unsigned: u32,
 }
 
-@group(0) @binding(1) var<storage, read_write> nodes: array<Node>;
+@group(0) @binding(1) var<storage, read> nodes: array<Node>;
 @group(0) @binding(2) var<storage, read> edges: array<Edge>;
 @group(0) @binding(3) var<storage, read_write> distances: array<Distance>;
-@group(0) @binding(4) var<storage, read_write> output: Output;
+@group(0) @binding(4) var<storage, read_write> visited: array<u32>;
+@group(0) @binding(5) var<storage, read_write> output: Output;
 
 override start: u32;  
 override end: u32;  
@@ -40,8 +40,8 @@ override end: u32;
   let zero = 0.0;
   let infinity = one / zero;
 
-  var visited = 0u;
-  while(visited < arrayLength(&nodes)) {
+  var nrVisited = 0u;
+  while(nrVisited < arrayLength(&nodes)) {
     let current = getCurrentNode();
 
     if(current == end) {
@@ -60,7 +60,7 @@ override end: u32;
       let edge = edges[i];
 
       let neighbor = edge.end;
-      if(nodes[neighbor].visited == 1) {
+      if(visited[neighbor] == 1) {
         continue;
       }
 
@@ -71,8 +71,8 @@ override end: u32;
       }
     }
 
-    nodes[current].visited = 1;
-    visited++;
+    visited[current] = 1;
+    nrVisited++;
   }
 }
 
@@ -82,7 +82,7 @@ fn getCurrentNode() -> u32 {
 
   for (var i = 0u; i < arrayLength(&nodes); i++) {
     let node = nodes[i];
-    if(node.visited == 1) {
+    if(visited[i] == 1) {
       continue;
     }
 
