@@ -29,8 +29,19 @@
 			paths: [
 				{ start: nodes[0]!, end: nodes[2]! },
 				{ start: nodes[4]!, end: nodes[3]! },
+				{ start: nodes[0]!, end: nodes[5]! },
+				{ start: nodes[5]!, end: nodes[1]! },
+				{ start: nodes[1]!, end: nodes[5]! },
+				{ start: nodes[3]!, end: nodes[0]! },
+				{ start: nodes[3]!, end: nodes[2]! },
 			],
 		});
+		console.table(
+			path.map((path) => ({
+				distance: path?.length,
+				path: path?.nodes.map((node) => nodes.indexOf(node)).join(', '),
+			}))
+		);
 		console.timeEnd('dijkstraGPU');
 
 		console.time('dijkstra');

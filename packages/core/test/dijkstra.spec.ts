@@ -5,16 +5,26 @@ import { Graph } from '../src/Graph.js';
 import { initWebGPU } from '../src/webGpu.js';
 import { shortestPath } from './data.js';
 
+const groupedShortestPath: Record<string, (typeof shortestPath)[number][]> = {};
+shortestPath.forEach((path) => {
+	const found = groupedShortestPath[path.file];
+	if (!Array.isArray(found)) {
+		groupedShortestPath[path.file] = [];
+	} else {
+		groupedShortestPath[path.file]!.push(path);
+	}
+});
+
 describe('Shortest Path', () => {
-	test.each(shortestPath)('Dijkstra GPU %#', async (parmas) => {
+	test.each(shortestPath)('Dijkstra GPU %#', async (params) => {
 		const { device } = await initWebGPU();
 
-		const jsonGraph = await import(`../../app/src/lib/data/graphs/${parmas.file}.json`);
+		const jsonGraph = await import(`../../app/src/lib/data/graphs/${params.file}.json`);
 		const graph = Graph.fromJSON(jsonGraph);
 
 		const nodes = [...graph.nodes];
-		const start = nodes[Number(parmas.start)];
-		const end = nodes[Number(parmas.end)];
+		const start = nodes[Number(params.start)];
+		const end = nodes[Number(params.end)];
 
 		expect(start).toBeTruthy();
 		expect(end).toBeTruthy();
@@ -23,30 +33,75 @@ describe('Shortest Path', () => {
 			throw new Error('Node not found');
 		}
 
-		const path = await dijkstraGPU({
+		const [path] = await dijkstraGPU({
 			device,
 			graph,
-			paths: [
-				{ start: start, end: start },
-				{ start, end },
-			],
+			paths: [{ start, end }],
 		});
 
 		expect(path).toBeTruthy();
 
 		if (!path) throw new Error('No shortest path found');
 
-		expect(path.length.toFixed(3)).toBe(parmas.length.toFixed(3));
-		expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(parmas.path);
+		expect(path.length.toFixed(3)).toBe(params.length.toFixed(3));
+		expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(params.path);
 	});
 
-	test.each(shortestPath)('Dijkstra %#', async (parmas) => {
-		const jsonGraph = await import(`../../app/src/lib/data/graphs/${parmas.file}.json`);
+	test.each(Object.entries(groupedShortestPath))(
+		'Dijkstra GPU Parallel %#',
+		async (file, params) => {
+			const { device } = await initWebGPU();
+
+			const jsonGraph = await import(`../../app/src/lib/data/graphs/${file}.json`);
+			const graph = Graph.fromJSON(jsonGraph);
+
+			const nodes = [...graph.nodes];
+			const paths = params.map((p) => {
+				const start = nodes[Number(p.start)];
+				const end = nodes[Number(p.end)];
+
+				expect(start).toBeTruthy();
+				expect(end).toBeTruthy();
+
+				if (!start || !end) {
+					throw new Error('Node not found');
+				}
+
+				return {
+					start,
+					end,
+				};
+			});
+
+			const shortestPaths = await dijkstraGPU({
+				device,
+				graph,
+				paths,
+			});
+
+			expect(shortestPaths).toBeInstanceOf(Array);
+
+			shortestPaths.forEach((path, index) => {
+				expect(path).toBeTruthy();
+
+				if (!path) throw new Error('No shortest path found');
+
+				const expected = params[index];
+
+				if (!expected) throw new Error('No expected path found');
+				expect(path.length.toFixed(3)).toBe(expected.length.toFixed(3));
+				expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(expected.path);
+			});
+		}
+	);
+
+	test.each(shortestPath)('Dijkstra %#', async (params) => {
+		const jsonGraph = await import(`../../app/src/lib/data/graphs/${params.file}.json`);
 		const graph = Graph.fromJSON(jsonGraph);
 
 		const nodes = [...graph.nodes];
-		const start = nodes[Number(parmas.start)];
-		const end = nodes[Number(parmas.end)];
+		const start = nodes[Number(params.start)];
+		const end = nodes[Number(params.end)];
 
 		expect(start).toBeTruthy();
 		expect(end).toBeTruthy();
@@ -61,7 +116,7 @@ describe('Shortest Path', () => {
 
 		if (!path) throw new Error('No shortest path found');
 
-		expect(path.length).toBe(parmas.length);
-		expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(parmas.path);
+		expect(path.length).toBe(params.length);
+		expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(params.path);
 	});
 });

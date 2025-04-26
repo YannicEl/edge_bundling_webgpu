@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	test: {
-		retry: 10,
+		retry: process.env.CI ? 10 : 0,
 		browser: {
 			enabled: true,
 			ui: false,

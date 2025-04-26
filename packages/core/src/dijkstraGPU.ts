@@ -18,17 +18,28 @@ export async function dijkstraGPU({
 	device,
 	graph,
 	paths,
-}: DijkstraGpuParams): Promise<Path | null> {
+}: DijkstraGpuParams): Promise<(Path | null)[]> {
 	const nodes = [...graph.nodes];
 
 	const list = graph.toAdjacencyList();
 	const nodesLength = list.nodes.length * paths.length;
 
+	const pathsBufferData = new BufferData({ start: 'uint', end: 'uint' }, paths.length);
+	for (let i = 0; i < paths.length; i++) {
+		const { start, end } = paths[i]!;
+		const startIndex = nodes.indexOf(start);
+		const endIndex = nodes.indexOf(end);
+		if (startIndex === -1 || endIndex === -1) {
+			throw new Error('Node not found in graph');
+		}
+
+		pathsBufferData.set({ start: startIndex, end: endIndex }, i);
+	}
+
 	const nodesBufferData = new BufferData({ edges: 'uint' }, list.nodes.length);
 	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, list.edges.length);
 	const distancesBufferData = new BufferData({ value: 'float', last: 'uint' }, nodesLength);
 	const visitedBufferData = new BufferData({ visited: 'uint' }, nodesLength);
-	const pathBufferData = new BufferData({ node: 'uint' }, nodesLength);
 
 	for (let i = 0; i < nodesLength; i++) {
 		if (i < list.nodes.length) {
@@ -37,13 +48,18 @@ export async function dijkstraGPU({
 		}
 		visitedBufferData.set({ visited: 0 }, i);
 		distancesBufferData.set({ value: Infinity }, i);
-		pathBufferData.set({ node: 0 }, i);
 	}
 
 	for (let i = 0; i < list.edges.length; i++) {
 		const edge = list.edges[i]!;
 		edgesBufferData.set({ end: edge.end, weight: edge.weight }, i);
 	}
+
+	const pathsBuffer = createGPUBuffer({
+		device,
+		data: pathsBufferData,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+	});
 
 	const nodesBuffer = createGPUBuffer({
 		device,
@@ -69,40 +85,25 @@ export async function dijkstraGPU({
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	});
 
-	const pathBuffer = createGPUBuffer({
-		device,
-		data: pathBufferData,
-		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-	});
-
-	const outputBuffer = device.createBuffer({
-		size: 64,
+	const shortestPathsBuffer = device.createBuffer({
+		size: paths.length * list.nodes.length * 4,
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
 	});
 
-	const outputReadBuffer = device.createBuffer({
-		size: 64,
+	const shortestPathsReadBuffer = device.createBuffer({
+		size: paths.length * list.nodes.length * 4,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 
-	const pathReadBuffer = device.createBuffer({
-		size: pathBufferData.buffer.byteLength,
-		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+	const shortestDistancesBuffer = device.createBuffer({
+		size: paths.length * 4,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
 	});
 
-	const path1 = paths[0]!;
-	const startIndex = nodes.indexOf(path1.start);
-	const endIndex = nodes.indexOf(path1.end);
-	if (startIndex === -1 || endIndex === -1) {
-		throw new Error('Node not found in graph');
-	}
-
-	const path2 = paths[1]!;
-	const startIndex2 = nodes.indexOf(path2.start);
-	const endIndex2 = nodes.indexOf(path2.end);
-	if (startIndex2 === -1 || endIndex2 === -1) {
-		throw new Error('Node not found in graph');
-	}
+	const shortestDistancesReadBuffer = device.createBuffer({
+		size: paths.length * 4,
+		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+	});
 
 	const pipeline = await device.createComputePipelineAsync({
 		label: 'compute pipeline',
@@ -110,11 +111,7 @@ export async function dijkstraGPU({
 		compute: {
 			module: device.createShaderModule({ code: shader }),
 			constants: {
-				node_count: nodesLength,
-				start1: startIndex,
-				end1: endIndex,
-				start2: startIndex2,
-				end2: endIndex2,
+				node_count: list.nodes.length,
 			},
 		},
 	});
@@ -123,12 +120,13 @@ export async function dijkstraGPU({
 		label: 'Compute Bind Group',
 		layout: pipeline.getBindGroupLayout(0),
 		entries: [
+			{ binding: 0, resource: { buffer: pathsBuffer } },
 			{ binding: 1, resource: { buffer: nodesBuffer } },
 			{ binding: 2, resource: { buffer: edgesBuffer } },
 			{ binding: 3, resource: { buffer: distancesBuffer } },
 			{ binding: 4, resource: { buffer: visitedBuffer } },
-			{ binding: 5, resource: { buffer: pathBuffer } },
-			{ binding: 6, resource: { buffer: outputBuffer } },
+			{ binding: 5, resource: { buffer: shortestPathsBuffer } },
+			{ binding: 6, resource: { buffer: shortestDistancesBuffer } },
 		],
 	});
 
@@ -141,71 +139,54 @@ export async function dijkstraGPU({
 	pass.dispatchWorkgroups(paths.length);
 	pass.end();
 
-	encoder.copyBufferToBuffer(outputBuffer, 0, outputReadBuffer, 0, 64);
-	encoder.copyBufferToBuffer(pathBuffer, 0, pathReadBuffer, 0, pathBufferData.buffer.byteLength);
+	encoder.copyBufferToBuffer(
+		shortestPathsBuffer,
+		0,
+		shortestPathsReadBuffer,
+		0,
+		paths.length * list.nodes.length * 4
+	);
+	encoder.copyBufferToBuffer(
+		shortestDistancesBuffer,
+		0,
+		shortestDistancesReadBuffer,
+		0,
+		paths.length * 4
+	);
 
 	// Finish encoding and submit the commands
 	const commandBuffer = encoder.finish();
 	device.queue.submit([commandBuffer]);
 
-	await outputReadBuffer.mapAsync(GPUMapMode.READ);
-	await pathReadBuffer.mapAsync(GPUMapMode.READ);
+	await shortestPathsReadBuffer.mapAsync(GPUMapMode.READ);
+	await shortestDistancesReadBuffer.mapAsync(GPUMapMode.READ);
 
-	const buffer = await outputReadBuffer.getMappedRange();
-	const buffer2 = await pathReadBuffer.getMappedRange();
+	const shortestPathsData = new Uint32Array(await shortestPathsReadBuffer.getMappedRange());
+	const shortestDistanceData = new Float32Array(await shortestDistancesReadBuffer.getMappedRange());
 
-	const outputDataBuffer = new BufferData(
-		{
-			length: 'float',
-			length_2: 'vec4f',
-			hallo: 'uint',
-			zwallo: 'uint',
-			drallo: 'uint',
-			float: 'float',
-			unsigned: 'uint',
-		},
-		1,
-		buffer
-	);
+	const ret: (Path | null)[] = [];
 
-	const test = new BufferData(
-		{
-			node: 'uint',
-		},
-		nodesLength,
-		buffer2
-	);
+	for (let i = 0; i < paths.length; i++) {
+		const path = shortestPathsData.slice(i * list.nodes.length, (i + 1) * list.nodes.length);
+		const distance = shortestDistanceData[i];
 
-	console.log({ test });
-
-	console.log(outputDataBuffer);
-	console.log('Distance:', ...outputDataBuffer.get('length'));
-	console.log('Distance 2:', ...outputDataBuffer.get('length_2'));
-	console.log('Hallo:', ...outputDataBuffer.get('hallo'));
-	console.log('Zwallo:', ...outputDataBuffer.get('zwallo'));
-	console.log('Drallo:', ...outputDataBuffer.get('drallo'));
-	console.log('Float:', ...outputDataBuffer.get('float'));
-	console.log('Unsigned:', ...outputDataBuffer.get('unsigned'));
-
-	const [distance] = outputDataBuffer.get('length');
-	const shortestPath: number[] = [];
-	let stop = false;
-	test.views.forEach((node) => {
-		const pathNode = node.node.at(0)!;
-
-		if (pathNode === list.nodes.length) {
-			stop = true;
+		if (distance === undefined || distance === Infinity) {
+			ret.push(null);
+			continue;
 		}
 
-		if (!stop) shortestPath.unshift(pathNode);
-	});
+		const shortestPath: number[] = [];
+		for (const node of path) {
+			if (node === list.nodes.length) break;
 
-	if (distance === undefined || distance === Infinity) {
-		return null;
-	} else {
-		return {
-			nodes: shortestPath.map((index) => nodes[index]!),
+			shortestPath.unshift(node);
+		}
+
+		ret.push({
 			length: distance,
-		};
+			nodes: shortestPath.map((node) => nodes[node]!),
+		});
 	}
+
+	return ret;
 }
