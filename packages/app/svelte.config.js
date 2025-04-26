@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-cloudflare-workers';
+import adapter from '@sveltejs/adapter-cloudflare';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -7,7 +7,7 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-			config: './wrangler.json',
+			config: './wrangler.jsonc',
 		}),
 	},
 };

@@ -2,13 +2,14 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "bachelor-app",
 	"main": "./.cloudflare/worker.js",
-	"site": {
-		"bucket": "./.cloudflare/public"
+	"assets": {
+		"directory": ".cloudflare/public",
+		"binding": "ASSETS",
 	},
-	"compatibility_date": "2025-03-22",
+	"compatibility_date": "2025-04-26",
 	"compatibility_flags": ["nodejs_compat"],
 
 	"observability": { "enabled": true },
 
-	"routes": [{ "pattern": "bachelor.yannic.at", "custom_domain": true }]
+	"routes": [{ "pattern": "bachelor.yannic.at", "custom_domain": true }],
 }
