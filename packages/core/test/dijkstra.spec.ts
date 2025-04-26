@@ -23,7 +23,14 @@ describe('Shortest Path', () => {
 			throw new Error('Node not found');
 		}
 
-		const path = await dijkstraGPU({ device, graph, start, end });
+		const path = await dijkstraGPU({
+			device,
+			graph,
+			paths: [
+				{ start: start, end: start },
+				{ start, end },
+			],
+		});
 
 		expect(path).toBeTruthy();
 

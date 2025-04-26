@@ -8,45 +8,33 @@ import type { Path } from './path';
 export type DijkstraGpuParams = {
 	device: GPUDevice;
 	graph: Graph;
-	start: Node;
-	end: Node;
+	paths: {
+		start: Node;
+		end: Node;
+	}[];
 };
 
 export async function dijkstraGPU({
 	device,
 	graph,
-	start,
-	end,
+	paths,
 }: DijkstraGpuParams): Promise<Path | null> {
 	const nodes = [...graph.nodes];
-	const startIndex = nodes.indexOf(start);
-	const endIndex = nodes.indexOf(end);
-	if (startIndex === -1 || endIndex === -1) {
-		throw new Error('Node not found in graph');
-	}
-
-	const pipeline = await device.createComputePipelineAsync({
-		label: 'compute pipeline',
-		layout: 'auto',
-		compute: {
-			module: device.createShaderModule({ code: shader }),
-			constants: {
-				start: startIndex,
-				end: endIndex,
-			},
-		},
-	});
 
 	const list = graph.toAdjacencyList();
+	const nodesLength = list.nodes.length * paths.length;
+
 	const nodesBufferData = new BufferData({ edges: 'uint' }, list.nodes.length);
 	const edgesBufferData = new BufferData({ end: 'uint', weight: 'float' }, list.edges.length);
-	const distancesBufferData = new BufferData({ value: 'float', last: 'uint' }, list.nodes.length);
-	const visitedBufferData = new BufferData({ visited: 'uint' }, list.nodes.length);
-	const pathBufferData = new BufferData({ node: 'uint' }, list.nodes.length);
+	const distancesBufferData = new BufferData({ value: 'float', last: 'uint' }, nodesLength);
+	const visitedBufferData = new BufferData({ visited: 'uint' }, nodesLength);
+	const pathBufferData = new BufferData({ node: 'uint' }, nodesLength);
 
-	for (let i = 0; i < list.nodes.length; i++) {
-		const node = list.nodes[i]!;
-		nodesBufferData.set({ edges: node }, i);
+	for (let i = 0; i < nodesLength; i++) {
+		if (i < list.nodes.length) {
+			const node = list.nodes[i]!;
+			nodesBufferData.set({ edges: node }, i);
+		}
 		visitedBufferData.set({ visited: 0 }, i);
 		distancesBufferData.set({ value: Infinity }, i);
 		pathBufferData.set({ node: 0 }, i);
@@ -102,6 +90,35 @@ export async function dijkstraGPU({
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 	});
 
+	const path1 = paths[0]!;
+	const startIndex = nodes.indexOf(path1.start);
+	const endIndex = nodes.indexOf(path1.end);
+	if (startIndex === -1 || endIndex === -1) {
+		throw new Error('Node not found in graph');
+	}
+
+	const path2 = paths[1]!;
+	const startIndex2 = nodes.indexOf(path2.start);
+	const endIndex2 = nodes.indexOf(path2.end);
+	if (startIndex2 === -1 || endIndex2 === -1) {
+		throw new Error('Node not found in graph');
+	}
+
+	const pipeline = await device.createComputePipelineAsync({
+		label: 'compute pipeline',
+		layout: 'auto',
+		compute: {
+			module: device.createShaderModule({ code: shader }),
+			constants: {
+				node_count: nodesLength,
+				start1: startIndex,
+				end1: endIndex,
+				start2: startIndex2,
+				end2: endIndex2,
+			},
+		},
+	});
+
 	const bindGroup = device.createBindGroup({
 		label: 'Compute Bind Group',
 		layout: pipeline.getBindGroupLayout(0),
@@ -121,7 +138,7 @@ export async function dijkstraGPU({
 
 	pass.setPipeline(pipeline);
 	pass.setBindGroup(0, bindGroup);
-	pass.dispatchWorkgroups(1);
+	pass.dispatchWorkgroups(paths.length);
 	pass.end();
 
 	encoder.copyBufferToBuffer(outputBuffer, 0, outputReadBuffer, 0, 64);
@@ -140,6 +157,7 @@ export async function dijkstraGPU({
 	const outputDataBuffer = new BufferData(
 		{
 			length: 'float',
+			length_2: 'vec4f',
 			hallo: 'uint',
 			zwallo: 'uint',
 			drallo: 'uint',
@@ -154,7 +172,7 @@ export async function dijkstraGPU({
 		{
 			node: 'uint',
 		},
-		list.nodes.length,
+		nodesLength,
 		buffer2
 	);
 
@@ -162,6 +180,7 @@ export async function dijkstraGPU({
 
 	console.log(outputDataBuffer);
 	console.log('Distance:', ...outputDataBuffer.get('length'));
+	console.log('Distance 2:', ...outputDataBuffer.get('length_2'));
 	console.log('Hallo:', ...outputDataBuffer.get('hallo'));
 	console.log('Zwallo:', ...outputDataBuffer.get('zwallo'));
 	console.log('Drallo:', ...outputDataBuffer.get('drallo'));

@@ -23,7 +23,14 @@
 		const nodes = [...graph.nodes];
 
 		console.time('dijkstraGPU');
-		const path = await dijkstraGPU({ device, graph, start: nodes[0]!, end: nodes[2]! });
+		const path = await dijkstraGPU({
+			device,
+			graph,
+			paths: [
+				{ start: nodes[0]!, end: nodes[2]! },
+				{ start: nodes[4]!, end: nodes[3]! },
+			],
+		});
 		console.timeEnd('dijkstraGPU');
 
 		console.time('dijkstra');
