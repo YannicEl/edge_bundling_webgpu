@@ -6,6 +6,6 @@
 	const { children } = $props();
 </script>
 
-<main class="h-screen w-screen">
+<main class="flex h-screen w-screen flex-col">
 	{@render children()}
 </main>

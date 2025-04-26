@@ -1,17 +1,18 @@
-import { dijkstra } from './dijkstra';
+import { dijkstraGPU } from './dijkstraGPU';
 import type { Edge } from './Edge';
 import type { Graph } from './Graph';
 import { greedySpanner } from './spanner';
+import { initWebGPU } from './webGpu';
 
-export type EdgePathBundlingParams = {
+export type EdgePathBundlinGPUgParams = {
 	spanner?: Graph;
 	maxDistortion?: number;
 	edgeWeightFactor?: number;
 };
 
-export function edgePathBundling(
+export async function edgePathBundlingGPU(
 	graph: Graph,
-	{ spanner, maxDistortion = 2, edgeWeightFactor = 1 }: EdgePathBundlingParams = {}
+	{ spanner, maxDistortion = 2, edgeWeightFactor = 1 }: EdgePathBundlinGPUgParams = {}
 ) {
 	if (!spanner) {
 		spanner = greedySpanner(graph, maxDistortion);
@@ -25,16 +26,9 @@ export function edgePathBundling(
 	spanner.edges = new Set(edges);
 
 	const difference: Edge[] = [];
-	const nodes = [...spanner.nodes];
 	graph.edges.forEach((edge) => {
 		if (!spanner.edges.has(edge)) {
-			const start = nodes.find((node) => node.equals(edge.start));
-			const end = nodes.find((node) => node.equals(edge.end));
-			if (start && end) {
-				difference.push({ start, end, weight: edge.weight });
-			} else {
-				throw new Error('Edge not found in spanner');
-			}
+			difference.push(edge);
 		}
 	});
 
@@ -43,10 +37,19 @@ export function edgePathBundling(
 		controlPoints: { x: number; y: number }[];
 	}[] = [];
 
+	const { device } = await initWebGPU();
+	const shortestPaths = await dijkstraGPU({
+		device,
+		graph: spanner,
+		paths: difference.map((edge) => ({ start: edge.start, end: edge.end })),
+	});
+
 	let i = 0;
-	for (const edge of difference) {
+	for (const shortestPath of shortestPaths) {
 		console.log(`Bundeling edge ${i} of ${difference.length} edges`);
-		const shortestPath = dijkstra(spanner, edge.start, edge.end);
+
+		const edge = difference[i];
+		if (!edge) throw new Error('Edge not found');
 
 		if (shortestPath === null) {
 			throw new Error('Shortest path is null');

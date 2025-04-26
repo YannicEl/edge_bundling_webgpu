@@ -6,4 +6,8 @@ export class Node {
 		this.x = x;
 		this.y = y;
 	}
+
+	equals(other: Node) {
+		return this.x === other.x && this.y === other.y;
+	}
 }

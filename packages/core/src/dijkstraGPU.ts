@@ -27,8 +27,8 @@ export async function dijkstraGPU({
 	const pathsBufferData = new BufferData({ start: 'uint', end: 'uint' }, paths.length);
 	for (let i = 0; i < paths.length; i++) {
 		const { start, end } = paths[i]!;
-		const startIndex = nodes.indexOf(start);
-		const endIndex = nodes.indexOf(end);
+		const startIndex = nodes.findIndex((node) => node.equals(start));
+		const endIndex = nodes.findIndex((node) => node.equals(end));
 		if (startIndex === -1 || endIndex === -1) {
 			throw new Error('Node not found in graph');
 		}

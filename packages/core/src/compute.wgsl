@@ -45,17 +45,19 @@ override node_count: u32;
 
     if(current == end) {
       shortestDistance[global_id.x] = distances[normalizeIndex(end, global_id)].value;
-      shortestPaths[0 + node_count * global_id.x] = end;
+      shortestPaths[normalizeIndex(0, global_id)] = end;
 
       var temp = end;
       var i = 1u;
       while(temp != start) {
         temp = distances[normalizeIndex(temp, global_id)].last;
-        shortestPaths[i + node_count * global_id.x] = temp;
+        shortestPaths[normalizeIndex(i, global_id)] = temp;
         i++;
       }
 
-      shortestPaths[i + node_count * global_id.x] = arrayLength(&nodes);
+      if(i != arrayLength(&nodes)) {
+        shortestPaths[normalizeIndex(i, global_id)] = arrayLength(&nodes);
+      }
     }
 
     let startEdge = nodes[current].edges;
