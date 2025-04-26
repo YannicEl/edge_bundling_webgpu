@@ -46,7 +46,6 @@ export async function dijkstraGPU({
 			const node = list.nodes[i]!;
 			nodesBufferData.set({ edges: node }, i);
 		}
-		visitedBufferData.set({ visited: 0 }, i);
 		distancesBufferData.set({ value: Infinity }, i);
 	}
 

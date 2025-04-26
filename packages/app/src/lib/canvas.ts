@@ -20,7 +20,7 @@ export function drawGraph(
 
 	i = 0;
 	graph.nodes.forEach((vertice) => {
-		drawCircle(ctx, vertice.x, vertice.y, { radius: 5, color: 'blue' });
+		drawCircle(ctx, vertice.x, vertice.y, { radius: 3, color: 'blue' });
 		ctx.font = '2rem sans-serif';
 		if (labels) {
 			ctx.fillText(i.toString(), vertice.x, vertice.y + 30);

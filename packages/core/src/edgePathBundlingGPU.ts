@@ -46,8 +46,6 @@ export async function edgePathBundlingGPU(
 
 	let i = 0;
 	for (const shortestPath of shortestPaths) {
-		console.log(`Bundeling edge ${i} of ${difference.length} edges`);
-
 		const edge = difference[i];
 		if (!edge) throw new Error('Edge not found');
 

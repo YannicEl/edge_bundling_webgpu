@@ -28,6 +28,9 @@
 		const spannerJSON = await import(`$lib/data/graphs/spanners/${name}.json`);
 		const spanner = Graph.fromJSON(spannerJSON);
 
+		console.log(`${name} graph loaded, ${graph.nodes.size} nodes, ${graph.edges.size} edges`);
+		console.log(`${name} spanner loaded, ${spanner.nodes.size} nodes, ${spanner.edges.size} edges`);
+
 		return { graph, spanner };
 	}
 
