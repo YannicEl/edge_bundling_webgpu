@@ -7,3 +7,5 @@
 23.03.2025 6h implementing Dijkstra algorithm in WebGPU
 29.03.2025 6h implementing Dijkstra algorithm in WebGPU done but it is really slow
 26.04.2025 10h implementing Dijkstra algorithm in WebGPU with parallel execution
+27.04.2025 10h implementing Floyd Warshall algorithm in WebGPU
+28.04.2025 10h implementing Floyd Warshall algorithm in WebGPU
