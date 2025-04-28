@@ -15,7 +15,7 @@ export class AdjacencyMatrix {
 		if (x < 0 || x >= this.size || y < 0 || y >= this.size) {
 			throw new Error(`Index out of bounds: (${x}, ${y})`);
 		}
-		return this.values[x * this.size + y];
+		return this.values[x * this.size + y]!;
 	}
 
 	set(x: number, y: number, value: number) {

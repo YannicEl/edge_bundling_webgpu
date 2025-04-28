@@ -1,5 +1,6 @@
 @group(0) @binding(0) var<storage, read_write> distance_matrix: array<f32>;
-@group(0) @binding(1) var<uniform> k : u32;
+@group(0) @binding(1) var<storage, read_write> next_matrix: array<f32>;
+@group(0) @binding(2) var<uniform> k : u32;
 
 override distance_matrix_size: u32;
 
@@ -22,5 +23,6 @@ override distance_matrix_size: u32;
   let throughK = distance_matrix[idx_ik] + distance_matrix[idx_kj];
   if (throughK < distance_matrix[idx_ij]) {
     distance_matrix[idx_ij] = throughK;
+    next_matrix[idx_ij] = next_matrix[idx_ik];
   }
 }

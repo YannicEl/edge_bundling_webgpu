@@ -1,3 +1,18 @@
+export function getShortestPathDataGouped() {
+	const groupedShortestPath: Record<string, Array<(typeof shortestPath)[number]>> = {};
+
+	shortestPath.forEach((path) => {
+		const found = groupedShortestPath[path.file];
+		if (!Array.isArray(found)) {
+			groupedShortestPath[path.file] = [];
+		} else {
+			groupedShortestPath[path.file]!.push(path);
+		}
+	});
+
+	return groupedShortestPath;
+}
+
 export const shortestPath = [
 	{ file: 'simple', start: 0, end: 2, path: [0, 1, 2], length: 718.8845741897483 },
 	{ file: 'simple', start: 4, end: 3, path: [4, 3], length: 339.4112549695428 },

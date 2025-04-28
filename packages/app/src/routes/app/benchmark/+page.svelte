@@ -1,24 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { initWebGPU } from '@bachelor/core/webGpu';
 	import { Graph } from '@bachelor/core/Graph';
-	import Canvas from '$lib/components/Canvas.svelte';
 	import { dijkstraGPU } from '@bachelor/core/dijkstraGPU';
 	import { drawGraph } from '$lib/canvas';
 	import { dijkstra } from '@bachelor/core/dijkstra';
+	import { getCanvasState } from '$lib/state/canvas';
+	import { getWebGPUState } from '$lib/state/webGPU';
 
-	let canvas: Canvas;
+	const { context } = getCanvasState();
+	const { device } = getWebGPUState();
 
 	onMount(async () => {
-		const ctx = canvas.getContext();
-		if (!ctx) return;
-
-		const { device } = await initWebGPU();
-
 		const graphJSON = await import('$lib/data/graphs/simple.json');
 		const graph = Graph.fromJSON(graphJSON);
 
-		drawGraph(ctx, graph);
+		drawGraph(context, graph);
 
 		const nodes = [...graph.nodes];
 
@@ -49,5 +45,3 @@
 		console.timeEnd('dijkstra');
 	});
 </script>
-
-<Canvas bind:this={canvas} class="h-full w-full" />
