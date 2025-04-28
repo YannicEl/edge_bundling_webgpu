@@ -8,11 +8,23 @@ export type WebGPU = {
 	device: GPUDevice;
 };
 
+export class WebGPUNotSupportedError extends Error {
+	constructor() {
+		super('WebGPU not supported');
+	}
+}
+
+export class WebGPUAdapterRequestError extends Error {
+	constructor() {
+		super('Error requesting WebGPU adapter');
+	}
+}
+
 export async function initWebGPU({
 	adapterOptions,
 	deviceOptions,
 }: InitWebGPUParmas = {}): Promise<WebGPU> {
-	if (!navigator.gpu) throw new Error('WebGPU not supported');
+	if (!navigator.gpu) throw new WebGPUNotSupportedError();
 
 	const adapter = await getWebGPUAdapter(adapterOptions);
 
@@ -27,10 +39,10 @@ export async function initWebGPU({
 export async function getWebGPUAdapter(
 	adapterOptions?: GPURequestAdapterOptions
 ): Promise<GPUAdapter> {
-	if (!navigator.gpu) throw new Error('WebGPU not supported');
+	if (!navigator.gpu) throw new WebGPUNotSupportedError();
 
 	const adapter = await navigator.gpu.requestAdapter(adapterOptions);
-	if (!adapter) throw new Error('Error requesting WebGPU adapter');
+	if (!adapter) throw new WebGPUAdapterRequestError();
 
 	return adapter;
 }

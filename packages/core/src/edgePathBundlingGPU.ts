@@ -44,6 +44,7 @@ export async function edgePathBundlingGPU(
 		paths: difference.map((edge) => ({ start: edge.start, end: edge.end })),
 	});
 
+	console.time('edge bundling');
 	let i = 0;
 	for (const shortestPath of shortestPaths) {
 		const edge = difference[i];
@@ -62,6 +63,7 @@ export async function edgePathBundlingGPU(
 
 		i++;
 	}
+	console.timeEnd('edge bundling');
 
 	return {
 		bundeledEdges,

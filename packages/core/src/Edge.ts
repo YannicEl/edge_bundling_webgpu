@@ -12,5 +12,8 @@ export class Edge {
 		this.weight = Math.sqrt(
 			Math.pow(this.end.x - this.start.x, 2) + Math.pow(this.end.y - this.start.y, 2)
 		);
+
+		this.start.edges.add(this.end);
+		this.end.edges.add(this.start);
 	}
 }

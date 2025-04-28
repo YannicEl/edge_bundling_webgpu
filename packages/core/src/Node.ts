@@ -2,7 +2,11 @@ export class Node {
 	x: number;
 	y: number;
 
+	edges: WeakSet<Node>;
+
 	constructor(x: number, y: number) {
+		this.edges = new WeakSet<Node>();
+
 		this.x = x;
 		this.y = y;
 	}

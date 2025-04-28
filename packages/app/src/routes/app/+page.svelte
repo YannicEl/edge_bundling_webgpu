@@ -5,21 +5,17 @@
 	import { drawBezierCurve } from '@bachelor/core/canvas';
 	import { drawGraph } from '$lib/canvas';
 	import type { Edge } from '@bachelor/core/Edge';
+	import { getCanvasState } from '$lib/state/canvas';
+	import { getWebGPUState } from '$lib/state/webGPU';
+	import ControlPanel from '$lib/components/ControlPanel.svelte';
 
-	let canvas = $state<HTMLCanvasElement | null>();
+	const canvas = getCanvasState();
+	console.log(canvas);
+
+	const webGPU = getWebGPUState();
+	console.log(webGPU);
 
 	let selectedGraph = $state<string>('simple');
-
-	function getCanvasContext() {
-		if (!canvas) return;
-
-		const { width, height } = canvas.getBoundingClientRect();
-		canvas.width = width;
-		canvas.height = height;
-
-		const ctx = canvas.getContext('2d');
-		return ctx;
-	}
 
 	async function loadGraph(name: string) {
 		const graphJSON = await import(`$lib/data/graphs/${name}.json`);
@@ -38,8 +34,7 @@
 		graph: Graph,
 		bundeledEdges: { edge: Edge; controlPoints: { x: number; y: number }[] }[]
 	) {
-		const ctx = getCanvasContext();
-		if (!ctx) return;
+		const ctx = canvas.context;
 
 		ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
 
@@ -84,19 +79,17 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-col">
-	<div class="flex gap-4">
-		<select name="graph" bind:value={selectedGraph}>
-			<option value="simple">Simple</option>
-			<option value="example">Example</option>
-			<option value="airlines">Airlines</option>
-			<option value="migration">Migration</option>
-			<option value="airtraffic">Airtraffic</option>
-		</select>
+<ControlPanel>
+	<select name="graph" bind:value={selectedGraph}>
+		<option value="simple">Simple</option>
+		<option value="example">Example</option>
+		<option value="airlines">Airlines</option>
+		<option value="migration">Migration</option>
+		<option value="airtraffic">Airtraffic</option>
+	</select>
 
-		<button onclick={runCPU}>Run CPU</button>
-		<button onclick={runGPU}>Run GPU</button>
-	</div>
+	<button onclick={runCPU}>Run CPU</button>
+	<button onclick={runGPU}>Run GPU</button>
 
-	<canvas bind:this={canvas} class="flex flex-1"></canvas>
-</div>
+	<a href="/">back</a>
+</ControlPanel>
