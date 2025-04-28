@@ -178,9 +178,7 @@ export class FloydWarshall {
 			const startIndex = nodes.indexOf(start);
 			const endIndex = nodes.indexOf(end);
 
-			console.log(`startIndex: ${startIndex}, endIndex: ${endIndex}`);
 			const distance = this.distanceMatrix.get(startIndex, endIndex);
-			console.log(`distance: ${distance}`);
 			if (distance === undefined || distance === Infinity) {
 				ret.push(null);
 				continue;

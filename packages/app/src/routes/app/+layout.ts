@@ -7,7 +7,14 @@ import { redirect } from '@sveltejs/kit';
 
 export const load = async () => {
 	try {
-		const webGPU = await initWebGPU();
+		const webGPU = await initWebGPU({
+			deviceOptions: (adapter) => ({
+				requiredLimits: {
+					maxBufferSize: adapter.limits.maxBufferSize,
+					maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+				},
+			}),
+		});
 
 		return {
 			webGPU,
