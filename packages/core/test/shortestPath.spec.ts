@@ -116,7 +116,16 @@ describe('Shortest Path', () => {
 	test.each(Object.entries(groupedShortestPath))(
 		'Floyd Warshall GPU Parallel %#',
 		async (file, params) => {
-			const { device } = await initWebGPU();
+			const { device } = await initWebGPU({
+				deviceOptions: (adapter) => ({
+					requiredLimits: {
+						maxBufferSize: adapter.limits.maxBufferSize,
+						maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+					},
+				}),
+			});
+
+			console.log(device.limits);
 
 			const jsonGraph = await import(`../../app/src/lib/data/graphs/${file}.json`);
 			const graph = Graph.fromJSON(jsonGraph);
