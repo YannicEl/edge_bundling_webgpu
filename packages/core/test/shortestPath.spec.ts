@@ -125,7 +125,8 @@ describe('Shortest Path', () => {
 				}),
 			});
 
-			console.log(device.limits);
+			console.log(device.limits.maxBufferSize);
+			console.log(device.limits.maxStorageBufferBindingSize);
 
 			const jsonGraph = await import(`../../app/src/lib/data/graphs/${file}.json`);
 			const graph = Graph.fromJSON(jsonGraph);
