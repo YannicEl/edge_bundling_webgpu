@@ -14,7 +14,7 @@
 	},
 	"devDependencies": {
 		"@iconify-json/mdi": "1.2.3",
-		"@sveltejs/adapter-cloudflare": "7.0.2",
+		"@sveltejs/adapter-cloudflare": "7.0.3",
 		"@sveltejs/kit": "2.20.8",
 		"@sveltejs/vite-plugin-svelte": "5.0.3",
 		"@webgpu/types": "0.1.60",
@@ -22,14 +22,14 @@
 		"svelte": "5.28.2",
 		"svelte-check": "4.1.7",
 		"typescript": "5.8.3",
-		"unocss": "66.1.0",
+		"unocss": "66.1.1",
 		"unplugin-icons": "22.1.0",
 		"vite": "6.3.5",
-		"wrangler": "4.14.1"
+		"wrangler": "4.14.4"
 	},
 	"dependencies": {
 		"@bachelor/core": "workspace:",
-		"@unocss/reset": "66.1.0",
-		"bits-ui": "1.4.6"
+		"@unocss/reset": "66.1.1",
+		"bits-ui": "1.4.7"
 	}
 }
