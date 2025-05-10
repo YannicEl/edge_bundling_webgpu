@@ -1,11 +1,9 @@
 html {
-	font-family: 'Inter';
-	accent-color: black;
-	--apply: accent-black;
+	--apply: accent-black font-sans;
 }
 
 body {
-	background-color: white;
+	--apply: bg-white;
 }
 
 h1 {

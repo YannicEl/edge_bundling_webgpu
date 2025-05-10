@@ -115,7 +115,6 @@ export class FloydWarshall {
 	}
 
 	async compute() {
-		console.time('k loop');
 		for (let k = 0; k < this.distanceMatrix.size; ++k) {
 			this.#device.queue.writeBuffer(this.#kBuffer!, 0, new Uint32Array([k]).buffer);
 
@@ -150,23 +149,15 @@ export class FloydWarshall {
 			const commandBuffer = encoder.finish();
 			this.#device.queue.submit([commandBuffer]);
 		}
-		console.timeEnd('k loop');
 
-		console.time('read buffer');
 		await this.#distanceMatrixReadBuffer!.mapAsync(GPUMapMode.READ);
 		const distances = new Float32Array(await this.#distanceMatrixReadBuffer!.getMappedRange());
 
 		await this.#nextMatrixReadBuffer!.mapAsync(GPUMapMode.READ);
 		const next = new Float32Array(await this.#nextMatrixReadBuffer!.getMappedRange());
-		console.timeEnd('read buffer');
 
-		console.log('Distances:');
-		this.distanceMatrix = new AdjacencyMatrix(this.distanceMatrix.size, distances);
-		this.distanceMatrix.log();
-
-		console.log('Next:');
-		this.nextMatrix = new AdjacencyMatrix(this.nextMatrix.size, next);
-		this.nextMatrix.log();
+		this.distanceMatrix.values = distances;
+		this.nextMatrix.values = next;
 	}
 
 	shortestPaths(paths: { start: Node; end: Node }[]): (Path | null)[] {
@@ -175,8 +166,10 @@ export class FloydWarshall {
 		const ret: (Path | null)[] = [];
 
 		for (const { start, end } of paths) {
-			const startIndex = nodes.indexOf(start);
-			const endIndex = nodes.indexOf(end);
+			const startIndex = nodes.findIndex((node) => node.equals(start));
+			const endIndex = nodes.findIndex((node) => node.equals(end));
+
+			console.log(`startIndex: ${startIndex}, endIndex: ${endIndex}`);
 
 			const distance = this.distanceMatrix.get(startIndex, endIndex);
 			if (distance === undefined || distance === Infinity) {

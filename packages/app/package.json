@@ -29,7 +29,6 @@
 	},
 	"dependencies": {
 		"@bachelor/core": "workspace:",
-		"@unocss/reset": "66.1.1",
 		"bits-ui": "1.4.7"
 	}
 }

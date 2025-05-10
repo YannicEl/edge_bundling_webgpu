@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { drawGraph } from '$lib/canvas';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
 	import { getCanvasState } from '$lib/state/canvas';
@@ -6,20 +8,26 @@
 	import type { Edge } from '@bachelor/core/Edge';
 	import { Graph } from '@bachelor/core/Graph';
 	import { drawBezierCurve } from '@bachelor/core/canvas';
+	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edgePathBundlingGPUFloydWarshall';
 	import { FloydWarshall } from '@bachelor/core/floydWarshall';
 
 	const { canvas, context } = getCanvasState();
 	const { device } = getWebGPUState();
 
-	let selectedGraph = $state<string>('simple');
+	let selectedGraph = $state<string>(page.url.searchParams.get('graph') ?? 'simple');
+
+	$effect(() => {
+		goto(`?graph=${selectedGraph}`);
+	});
 
 	async function loadGraph(name: string) {
 		const graphJSON = await import(`$lib/data/graphs/${name}.json`);
 		const graph = Graph.fromJSON(graphJSON);
 
-		console.log(`${name} graph loaded, ${graph.nodes.size} nodes, ${graph.edges.size} edges`);
+		const spannerJSON = await import(`$lib/data/graphs/spanners/${name}.json`);
+		const spanner = Graph.fromJSON(spannerJSON);
 
-		return { graph };
+		return { graph, spanner };
 	}
 
 	function drawGraphAndBundledEdges(
@@ -29,7 +37,7 @@
 		context.clearRect(0, 0, canvas.element.width, canvas.element.height);
 
 		console.time('Draw');
-		drawGraph(context, graph, true);
+		drawGraph(context, graph, false);
 
 		bundeledEdges?.forEach(({ edge, controlPoints }, i) => {
 			drawBezierCurve(context, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
@@ -41,7 +49,7 @@
 	}
 
 	async function run() {
-		const { graph } = await loadGraph(selectedGraph);
+		const { graph, spanner } = await loadGraph(selectedGraph);
 
 		console.time('Floy Warshall');
 		const floydWarshall = new FloydWarshall({ graph, device });
@@ -49,11 +57,12 @@
 		await floydWarshall.compute();
 		console.timeEnd('Floy Warshall');
 
-		const nodes = [...graph.nodes];
-		const paths = floydWarshall.shortestPaths([{ start: nodes[0], end: nodes[5] }]);
-		console.log(paths);
+		const bundeledEdges = await edgePathBundlingGPUFloydWarshall(graph, {
+			device,
+			spanner,
+		});
 
-		drawGraphAndBundledEdges(graph);
+		drawGraphAndBundledEdges(graph, bundeledEdges);
 	}
 </script>
 

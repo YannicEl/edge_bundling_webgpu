@@ -1,18 +1,23 @@
-import { dijkstraGPU } from './dijkstraGPU';
 import type { Edge } from './Edge';
+import { FloydWarshall } from './floydWarshall';
 import type { Graph } from './Graph';
 import { greedySpanner } from './spanner';
-import { initWebGPU } from './webGpu';
 
-export type EdgePathBundlinGPUgParams = {
+export type EdgePathBundlingGPUFloydWarshallParams = {
+	device: GPUDevice;
 	spanner?: Graph;
 	maxDistortion?: number;
 	edgeWeightFactor?: number;
 };
 
-export async function edgePathBundlingGPU(
+export async function edgePathBundlingGPUFloydWarshall(
 	graph: Graph,
-	{ spanner, maxDistortion = 2, edgeWeightFactor = 1 }: EdgePathBundlinGPUgParams = {}
+	{
+		device,
+		spanner,
+		maxDistortion = 2,
+		edgeWeightFactor = 1,
+	}: EdgePathBundlingGPUFloydWarshallParams
 ) {
 	if (!spanner) {
 		spanner = greedySpanner(graph, maxDistortion);
@@ -32,22 +37,21 @@ export async function edgePathBundlingGPU(
 		}
 	});
 
+	const floydWarshall = new FloydWarshall({ graph: spanner, device });
+	await floydWarshall.init();
+	await floydWarshall.compute();
+	const shortestPaths = await floydWarshall.shortestPaths(
+		difference.map((edge) => ({ start: edge.start, end: edge.end }))
+	);
+
 	const bundeledEdges: {
 		edge: Edge;
 		controlPoints: { x: number; y: number }[];
 	}[] = [];
 
-	const { device } = await initWebGPU();
-	const shortestPaths = await dijkstraGPU({
-		device,
-		graph: spanner,
-		paths: difference.map((edge) => ({ start: edge.start, end: edge.end })),
-	});
-
-	console.time('edge bundling');
 	let i = 0;
 	for (const shortestPath of shortestPaths) {
-		const edge = difference[i];
+		const edge = edges[i];
 		if (!edge) throw new Error('Edge not found');
 
 		if (shortestPath === null) {
@@ -63,12 +67,6 @@ export async function edgePathBundlingGPU(
 
 		i++;
 	}
-	console.timeEnd('edge bundling');
 
-	console.log(bundeledEdges);
-
-	return {
-		bundeledEdges,
-		spanner,
-	};
+	return bundeledEdges;
 }

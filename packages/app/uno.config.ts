@@ -1,14 +1,20 @@
-import { defineConfig, presetWind3, transformerDirectives } from 'unocss';
+import { defineConfig, presetWind4, transformerDirectives } from 'unocss';
 
 export default defineConfig({
-	presets: [presetWind3()],
+	presets: [
+		presetWind4({
+			preflights: {
+				reset: true,
+			},
+		}),
+	],
 	transformers: [
 		transformerDirectives({
 			applyVariable: ['--apply'],
 		}),
 	],
 	theme: {
-		fontFamily: {
+		font: {
 			sans: 'Inter, sans-serif',
 		},
 	},
