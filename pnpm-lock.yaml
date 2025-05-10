@@ -26,9 +26,6 @@ importers:
       '@bachelor/core':
         specifier: 'workspace:'
         version: link:../core
-      '@unocss/reset':
-        specifier: 66.1.1
-        version: 66.1.1
       bits-ui:
         specifier: 1.4.7
         version: 1.4.7(svelte@5.28.2)
