@@ -5,6 +5,9 @@ import {
 } from '@bachelor/core/webGpu';
 import { redirect } from '@sveltejs/kit';
 
+export const prerender = false;
+export const ssr = false;
+
 export const load = async () => {
 	try {
 		const webGPU = await initWebGPU({
