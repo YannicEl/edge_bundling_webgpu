@@ -1,29 +1,63 @@
-import { drawCircle, drawLine } from '@bachelor/core/canvas';
 import type { Graph } from '@bachelor/core/Graph';
+import { drawCircle, drawLine } from '@bachelor/core/canvas';
 
-export function drawGraph(
-	ctx: CanvasRenderingContext2D,
-	graph: Graph,
-	labels: boolean = true
-): void {
+export type DrawGraphParams = {
+	ctx: CanvasRenderingContext2D;
+	graph: Graph;
+	drawLabels?: boolean;
+	drawEdges?: boolean;
+};
+
+export function drawGraph({
+	ctx,
+	graph,
+	drawLabels = true,
+	drawEdges = true,
+}: DrawGraphParams): void {
 	ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
 
-	let i = 0;
-	graph.edges.forEach(({ start, end }) => {
-		drawLine(ctx, start.x, start.y, end.x, end.y, { width: 1, color: 'black' });
-		ctx.font = '2rem sans-serif';
-		if (labels) {
-			ctx.fillText(i.toString(), (start.x + end.x) / 2, (start.y + end.y) / 2);
-		}
-		i++;
-	});
+	// Compute bounding box
+	const nodes = Array.from(graph.nodes);
+	if (nodes.length === 0) return;
+	const minX = Math.min(...nodes.map((n) => n.x));
+	const maxX = Math.max(...nodes.map((n) => n.x));
+	const minY = Math.min(...nodes.map((n) => n.y));
+	const maxY = Math.max(...nodes.map((n) => n.y));
 
-	i = 0;
+	const graphCenterX = (minX + maxX) / 2;
+	const graphCenterY = (minY + maxY) / 2;
+	const canvasCenterX = ctx.canvas.width / 2;
+	const canvasCenterY = ctx.canvas.height / 2;
+
+	const offsetX = canvasCenterX - graphCenterX;
+	const offsetY = canvasCenterY - graphCenterY;
+
+	if (drawEdges) {
+		let i = 0;
+		graph.edges.forEach(({ start, end }) => {
+			drawLine(ctx, start.x + offsetX, start.y + offsetY, end.x + offsetX, end.y + offsetY, {
+				width: 1,
+				color: 'black',
+			});
+
+			if (drawLabels) {
+				ctx.font = '2rem sans-serif';
+				ctx.fillText(
+					i.toString(),
+					(start.x + end.x) / 2 + offsetX,
+					(start.y + end.y) / 2 + offsetY
+				);
+			}
+			i++;
+		});
+	}
+
+	let i = 0;
 	graph.nodes.forEach((vertice) => {
-		drawCircle(ctx, vertice.x, vertice.y, { radius: 3, color: 'blue' });
-		ctx.font = '2rem sans-serif';
-		if (labels) {
-			ctx.fillText(i.toString(), vertice.x, vertice.y + 30);
+		drawCircle(ctx, vertice.x + offsetX, vertice.y + offsetY, { radius: 3, color: 'blue' });
+		if (drawLabels) {
+			ctx.font = '2rem sans-serif';
+			ctx.fillText(i.toString(), vertice.x + offsetX, vertice.y + offsetY + 30);
 		}
 		i++;
 	});

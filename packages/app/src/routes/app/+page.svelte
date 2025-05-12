@@ -8,70 +8,50 @@
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
+	import { loadGraph } from '$lib/loadGraph';
+	import { loadSpanner } from '$lib/loadGraph';
+	import RangeInput from '$lib/components/RangeInput.svelte';
 
-	const canvas = getCanvasState();
-	console.log(canvas);
-
-	const webGPU = getWebGPUState();
-	console.log(webGPU);
+	const { device } = getWebGPUState();
+	const { canvas, context } = getCanvasState();
 
 	let selectedGraph = $state<string>('simple');
+	let maxDistortion = $state<number>(2);
+	let edgeWeightFactor = $state<number>(1);
 
-	async function loadGraph(name: string) {
-		const graphJSON = await import(`$lib/data/graphs/${name}.json`);
-		const graph = Graph.fromJSON(graphJSON);
+	canvas.onResize = () => runGPU();
 
-		const spannerJSON = await import(`$lib/data/graphs/spanners/${name}.json`);
-		const spanner = Graph.fromJSON(spannerJSON);
-
-		console.log(`${name} graph loaded, ${graph.nodes.size} nodes, ${graph.edges.size} edges`);
-		console.log(`${name} spanner loaded, ${spanner.nodes.size} nodes, ${spanner.edges.size} edges`);
-
-		return { graph, spanner };
-	}
+	$effect(() => {
+		console.log(selectedGraph, maxDistortion, edgeWeightFactor);
+		runGPU();
+	});
 
 	function drawGraphAndBundledEdges(
 		graph: Graph,
 		bundeledEdges: { edge: Edge; controlPoints: { x: number; y: number }[] }[]
 	) {
-		const ctx = canvas.context;
-
-		ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
-
 		console.time('Draw');
-		drawGraph(ctx, graph, false);
+		drawGraph({ ctx: context, graph, drawLabels: false });
 
-		bundeledEdges.forEach(({ edge, controlPoints }, i) => {
-			drawBezierCurve(ctx, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
-				width: 1,
-				color: 'color(srgb 1 0 0 / 0.2)',
-			});
-		});
+		// bundeledEdges.forEach(({ edge, controlPoints }, i) => {
+		// 	drawBezierCurve(ctx, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
+		// 		width: 1,
+		// 		color: 'color(srgb 1 0 0 / 0.2)',
+		// 	});
+		// });
 		console.timeEnd('Draw');
 	}
 
-	async function runCPU() {
-		const { graph, spanner } = await loadGraph(selectedGraph);
-
-		console.time('EPB');
-		const { bundeledEdges } = await edgePathBundling(graph, {
-			spanner,
-			maxDistortion: 2,
-			edgeWeightFactor: 1,
-		});
-		console.timeEnd('EPB');
-
-		drawGraphAndBundledEdges(spanner, bundeledEdges);
-	}
-
 	async function runGPU() {
-		const { graph, spanner } = await loadGraph(selectedGraph);
+		const graph = await loadGraph(selectedGraph);
+		const spanner = await loadSpanner(selectedGraph);
 
 		console.time('EPB GPU');
 		const { bundeledEdges } = await edgePathBundlingGPU(graph, {
+			device,
 			spanner,
-			maxDistortion: 2,
-			edgeWeightFactor: 1,
+			maxDistortion,
+			edgeWeightFactor,
 		});
 		console.timeEnd('EPB GPU');
 
@@ -80,15 +60,27 @@
 </script>
 
 <ControlPanel>
-	<select name="graph" bind:value={selectedGraph}>
-		<option value="simple">Simple</option>
-		<option value="example">Example</option>
-		<option value="airlines">Airlines</option>
-		<option value="migration">Migration</option>
-		<option value="airtraffic">Airtraffic</option>
-	</select>
+	<label class="flex items-center justify-between gap-2">
+		Graph
+		<select name="graph" bind:value={selectedGraph}>
+			<option value="simple">Simple</option>
+			<option value="example">Example</option>
+			<option value="airlines">Airlines</option>
+			<option value="migration">Migration</option>
+			<option value="airtraffic">Airtraffic</option>
+		</select>
+	</label>
 
-	<button onclick={runCPU}>Run CPU</button>
+	<label>
+		Max distortion
+		<RangeInput min={0} max={10} step={0.1} bind:value={maxDistortion} />
+	</label>
+
+	<label>
+		Edge weight factor
+		<RangeInput min={0} max={2} step={0.05} bind:value={edgeWeightFactor} />
+	</label>
+
 	<button onclick={runGPU}>Run GPU</button>
 
 	<a href="/">back</a>

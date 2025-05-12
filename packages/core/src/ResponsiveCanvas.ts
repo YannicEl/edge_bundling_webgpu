@@ -3,17 +3,20 @@ export type ResponsiveCanvasOptions = {
 	minWidth?: number;
 	maxHeight?: number;
 	minHeight?: number;
+	onResize?: (canvas: HTMLCanvasElement) => void;
 };
 
 export class ResponsiveCanvas {
 	element: HTMLCanvasElement;
 	#observer: ResizeObserver;
+	onResize?: (canvas: HTMLCanvasElement) => void;
 
 	constructor(
 		canvas: HTMLCanvasElement,
-		{ maxWidth, minWidth = 1, maxHeight, minHeight = 1 }: ResponsiveCanvasOptions = {}
+		{ maxWidth, minWidth = 1, maxHeight, minHeight = 1, onResize }: ResponsiveCanvasOptions = {}
 	) {
 		this.element = canvas;
+		this.onResize = onResize;
 
 		this.#observer = new ResizeObserver((entries) => {
 			for (const entry of entries) {
@@ -30,6 +33,8 @@ export class ResponsiveCanvas {
 						Math.min(maxHeight ?? Infinity, contentBoxSize.blockSize)
 					);
 				}
+
+				this.onResize?.(this.element);
 			}
 		});
 

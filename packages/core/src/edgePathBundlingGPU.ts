@@ -2,9 +2,9 @@ import { dijkstraGPU } from './dijkstraGPU';
 import type { Edge } from './Edge';
 import type { Graph } from './Graph';
 import { greedySpanner } from './spanner';
-import { initWebGPU } from './webGpu';
 
 export type EdgePathBundlinGPUgParams = {
+	device: GPUDevice;
 	spanner?: Graph;
 	maxDistortion?: number;
 	edgeWeightFactor?: number;
@@ -12,7 +12,7 @@ export type EdgePathBundlinGPUgParams = {
 
 export async function edgePathBundlingGPU(
 	graph: Graph,
-	{ spanner, maxDistortion = 2, edgeWeightFactor = 1 }: EdgePathBundlinGPUgParams = {}
+	{ device, spanner, maxDistortion = 2, edgeWeightFactor = 1 }: EdgePathBundlinGPUgParams
 ) {
 	if (!spanner) {
 		spanner = greedySpanner(graph, maxDistortion);
@@ -37,7 +37,6 @@ export async function edgePathBundlingGPU(
 		controlPoints: { x: number; y: number }[];
 	}[] = [];
 
-	const { device } = await initWebGPU();
 	const shortestPaths = await dijkstraGPU({
 		device,
 		graph: spanner,
