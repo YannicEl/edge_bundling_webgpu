@@ -8,6 +8,7 @@ import type { Path } from './path';
 export type FloydWarshallParams = {
 	graph: Graph;
 	device: GPUDevice;
+	edgeWeightFactor: number;
 };
 
 export class FloydWarshall {
@@ -26,7 +27,7 @@ export class FloydWarshall {
 	#nextMatrixReadBuffer: GPUBuffer | undefined;
 	#kBuffer: GPUBuffer | undefined;
 
-	constructor({ graph, device }: FloydWarshallParams) {
+	constructor({ graph, device, edgeWeightFactor = 1 }: FloydWarshallParams) {
 		this.graph = graph;
 		this.#device = device;
 		this.distanceMatrix = new AdjacencyMatrix(graph.nodes.size);
@@ -49,6 +50,7 @@ export class FloydWarshall {
 				let edge = null;
 				if (node1.edges.has(node2) && node2.edges.has(node1)) {
 					edge = new Edge(node1, node2);
+					edge.weight *= edgeWeightFactor;
 				}
 
 				if (edge) {
@@ -168,8 +170,6 @@ export class FloydWarshall {
 		for (const { start, end } of paths) {
 			const startIndex = nodes.findIndex((node) => node.equals(start));
 			const endIndex = nodes.findIndex((node) => node.equals(end));
-
-			console.log(`startIndex: ${startIndex}, endIndex: ${endIndex}`);
 
 			const distance = this.distanceMatrix.get(startIndex, endIndex);
 			if (distance === undefined || distance === Infinity) {

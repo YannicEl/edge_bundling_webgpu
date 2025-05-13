@@ -24,17 +24,21 @@ export class ResponsiveCanvas {
 					const contentBoxSize = entry.contentBoxSize[0];
 					if (!contentBoxSize) continue;
 
-					this.element.width = Math.max(
+					const newWidth = Math.max(
 						minWidth,
 						Math.min(maxWidth ?? Infinity, contentBoxSize.inlineSize)
 					);
-					this.element.height = Math.max(
+					const newHeight = (this.element.height = Math.max(
 						minHeight,
 						Math.min(maxHeight ?? Infinity, contentBoxSize.blockSize)
-					);
-				}
+					));
 
-				this.onResize?.(this.element);
+					if (newWidth !== this.element.width || newHeight !== this.element.height) {
+						this.element.width = newWidth;
+						this.element.height = newHeight;
+						this.onResize?.(this.element);
+					}
+				}
 			}
 		});
 

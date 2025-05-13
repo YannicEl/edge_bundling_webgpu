@@ -40,7 +40,12 @@
 </script>
 
 <main class="h-dvh w-dvw">
-	<canvas bind:this={canvas} class="h-full w-full"></canvas>
+	<canvas
+		bind:this={canvas}
+		class="h-full w-full"
+		width={window.innerWidth}
+		height={window.innerHeight}
+	></canvas>
 
 	{#if canvas}
 		{@render children()}

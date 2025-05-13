@@ -5,6 +5,7 @@ export type DrawGraphParams = {
 	ctx: CanvasRenderingContext2D;
 	graph: Graph;
 	drawLabels?: boolean;
+	drawNodes?: boolean;
 	drawEdges?: boolean;
 };
 
@@ -12,6 +13,7 @@ export function drawGraph({
 	ctx,
 	graph,
 	drawLabels = true,
+	drawNodes = true,
 	drawEdges = true,
 }: DrawGraphParams): void {
 	ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
@@ -52,13 +54,15 @@ export function drawGraph({
 		});
 	}
 
-	let i = 0;
-	graph.nodes.forEach((vertice) => {
-		drawCircle(ctx, vertice.x + offsetX, vertice.y + offsetY, { radius: 3, color: 'blue' });
-		if (drawLabels) {
-			ctx.font = '2rem sans-serif';
-			ctx.fillText(i.toString(), vertice.x + offsetX, vertice.y + offsetY + 30);
-		}
-		i++;
-	});
+	if (drawNodes) {
+		let i = 0;
+		graph.nodes.forEach((vertice) => {
+			drawCircle(ctx, vertice.x + offsetX, vertice.y + offsetY, { radius: 3, color: 'blue' });
+			if (drawLabels) {
+				ctx.font = '2rem sans-serif';
+				ctx.fillText(i.toString(), vertice.x + offsetX, vertice.y + offsetY + 30);
+			}
+			i++;
+		});
+	}
 }
