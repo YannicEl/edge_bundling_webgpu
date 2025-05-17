@@ -32,11 +32,6 @@
 		const graph = await loadGraph(selectedGraph);
 		const spanner = await loadSpanner(selectedGraph);
 
-		// const spanner = greedySpanner(graph, maxDistortion);
-		console.log(spanner.nodes.size);
-
-		// drawGraph({ ctx: context, graph: spanner, drawLabels: true, drawNodes: true, drawEdges: true });
-
 		console.time('EPB');
 		const { bundeledEdges } = await edgePathBundlingGPUFloydWarshall(graph, {
 			device,

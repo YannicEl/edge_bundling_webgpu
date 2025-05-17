@@ -83,7 +83,6 @@ export function drawGraphAndBundledEdges({
 	drawGraph({ ctx, graph, drawLabels: false, drawNodes: false, drawEdges: false });
 
 	bundeledEdges.forEach(({ edge, controlPoints }, i) => {
-		if (controlPoints.length === 0) return;
 		drawBezierCurve(ctx, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
 			width: 1,
 			color: 'color(srgb 1 0 0 / 0.2)',
