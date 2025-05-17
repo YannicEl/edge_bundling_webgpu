@@ -1,14 +1,14 @@
-import { AdjacencyMatrix } from './AdjacencyMatrix';
-import { Edge } from './Edge';
-import shader from './floydWarshall.wgsl?raw';
-import type { Graph } from './Graph';
-import { Node } from './Node';
-import type { Path } from './path';
+import { AdjacencyMatrix } from '../../AdjacencyMatrix';
+import { Edge } from '../../Edge';
+import type { Graph } from '../../Graph';
+import { Node } from '../../Node';
+import type { Path } from '../../path';
+import shader from './shader.wgsl?raw';
 
 export type FloydWarshallParams = {
 	graph: Graph;
 	device: GPUDevice;
-	edgeWeightFactor: number;
+	edgeWeightFactor?: number;
 };
 
 export class FloydWarshall {
@@ -33,7 +33,7 @@ export class FloydWarshall {
 		this.distanceMatrix = new AdjacencyMatrix(graph.nodes.size);
 		this.nextMatrix = new AdjacencyMatrix(graph.nodes.size);
 
-		const nodes = [...graph.nodes];
+		const nodes = [...graph.nodes.values()];
 		for (let x = 0; x < this.distanceMatrix.size; x++) {
 			for (let y = 0; y < this.distanceMatrix.size; y++) {
 				if (x === y) {
@@ -50,7 +50,7 @@ export class FloydWarshall {
 				let edge = null;
 				if (node1.edges.has(node2) && node2.edges.has(node1)) {
 					edge = new Edge(node1, node2);
-					edge.weight *= edgeWeightFactor;
+					edge.weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
 				}
 
 				if (edge) {
@@ -132,32 +132,35 @@ export class FloydWarshall {
 			);
 			pass.end();
 
-			encoder.copyBufferToBuffer(
-				this.#distanceMatrixBuffer!,
-				0,
-				this.#distanceMatrixReadBuffer!,
-				0,
-				this.distanceMatrix.buffer.byteLength
-			);
-
-			encoder.copyBufferToBuffer(
-				this.#nextMatrixBuffer!,
-				0,
-				this.#nextMatrixReadBuffer!,
-				0,
-				this.nextMatrix.buffer.byteLength
-			);
-
 			const commandBuffer = encoder.finish();
 			this.#device.queue.submit([commandBuffer]);
 		}
+
+		const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
+		encoder.copyBufferToBuffer(
+			this.#distanceMatrixBuffer!,
+			0,
+			this.#distanceMatrixReadBuffer!,
+			0,
+			this.distanceMatrix.buffer.byteLength
+		);
+
+		encoder.copyBufferToBuffer(
+			this.#nextMatrixBuffer!,
+			0,
+			this.#nextMatrixReadBuffer!,
+			0,
+			this.nextMatrix.buffer.byteLength
+		);
+
+		const commandBuffer = encoder.finish();
+		this.#device.queue.submit([commandBuffer]);
 
 		await this.#distanceMatrixReadBuffer!.mapAsync(GPUMapMode.READ);
 		const distances = new Float32Array(await this.#distanceMatrixReadBuffer!.getMappedRange());
 
 		await this.#nextMatrixReadBuffer!.mapAsync(GPUMapMode.READ);
 		const next = new Float32Array(await this.#nextMatrixReadBuffer!.getMappedRange());
-
 		this.distanceMatrix.values = distances;
 		this.nextMatrix.values = next;
 	}
@@ -168,8 +171,8 @@ export class FloydWarshall {
 		const ret: (Path | null)[] = [];
 
 		for (const { start, end } of paths) {
-			const startIndex = nodes.findIndex((node) => node.equals(start));
-			const endIndex = nodes.findIndex((node) => node.equals(end));
+			const startIndex = nodes.findIndex(([id, node]) => node.equals(start));
+			const endIndex = nodes.findIndex(([id, node]) => node.equals(end));
 
 			const distance = this.distanceMatrix.get(startIndex, endIndex);
 			if (distance === undefined || distance === Infinity) {
@@ -191,7 +194,7 @@ export class FloydWarshall {
 				newStartIndex = this.nextMatrix.get(newStartIndex, endIndex);
 				const node = nodes[newStartIndex];
 				if (!node) throw new Error('Node not found');
-				path.push(node);
+				path.push(node[1]);
 			}
 
 			ret.push({

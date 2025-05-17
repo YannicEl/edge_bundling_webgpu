@@ -1,5 +1,6 @@
+import type { Edge } from '@bachelor/core/Edge';
 import type { Graph } from '@bachelor/core/Graph';
-import { drawCircle, drawLine } from '@bachelor/core/canvas';
+import { drawBezierCurve, drawCircle, drawLine } from '@bachelor/core/canvas';
 
 export type DrawGraphParams = {
 	ctx: CanvasRenderingContext2D;
@@ -19,7 +20,7 @@ export function drawGraph({
 	ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
 
 	// Compute bounding box
-	const nodes = Array.from(graph.nodes);
+	const nodes = [...graph.nodes.values()];
 	if (nodes.length === 0) return;
 	const minX = Math.min(...nodes.map((n) => n.x));
 	const maxX = Math.max(...nodes.map((n) => n.x));
@@ -65,4 +66,28 @@ export function drawGraph({
 			i++;
 		});
 	}
+}
+
+export type DrawGraphAndBundledEdgesParams = {
+	ctx: CanvasRenderingContext2D;
+	graph: Graph;
+	bundeledEdges: { edge: Edge; controlPoints: { x: number; y: number }[] }[];
+};
+
+export function drawGraphAndBundledEdges({
+	ctx,
+	graph,
+	bundeledEdges,
+}: DrawGraphAndBundledEdgesParams): void {
+	console.time('Draw');
+	drawGraph({ ctx, graph, drawLabels: false, drawNodes: false, drawEdges: false });
+
+	bundeledEdges.forEach(({ edge, controlPoints }, i) => {
+		if (controlPoints.length === 0) return;
+		drawBezierCurve(ctx, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
+			width: 1,
+			color: 'color(srgb 1 0 0 / 0.2)',
+		});
+	});
+	console.timeEnd('Draw');
 }

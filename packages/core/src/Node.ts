@@ -11,7 +11,11 @@ export class Node {
 		this.y = y;
 	}
 
+	get id() {
+		return `${this.x}_${this.y}`;
+	}
+
 	equals(other: Node) {
-		return this.x === other.x && this.y === other.y;
+		return this.id === other.id;
 	}
 }

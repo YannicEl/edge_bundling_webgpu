@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Graph } from '@bachelor/core/Graph';
-	import { dijkstraGPU } from '@bachelor/core/dijkstraGPU';
 	import { drawGraph } from '$lib/canvas';
-	import { dijkstra } from '@bachelor/core/dijkstra';
+	import { dijkstra } from '@bachelor/core/shortest-path/dijkstra/cpu';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
+	import { dijkstraGPU } from '@bachelor/core/shortest-path/dijkstra/gpu';
 
 	const { context } = getCanvasState();
 	const { device } = getWebGPUState();

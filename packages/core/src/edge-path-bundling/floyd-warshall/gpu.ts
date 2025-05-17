@@ -1,7 +1,7 @@
-import type { Edge } from './Edge';
-import { FloydWarshall } from './floydWarshall';
-import type { Graph } from './Graph';
-import { greedySpanner } from './spanner';
+import type { Edge } from '../../Edge';
+import type { Graph } from '../../Graph';
+import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
+import { greedySpanner } from '../../spanner/greedy';
 
 export type EdgePathBundlingGPUFloydWarshallParams = {
 	device: GPUDevice;
@@ -23,16 +23,13 @@ export async function edgePathBundlingGPUFloydWarshall(
 		spanner = greedySpanner(graph, maxDistortion);
 	}
 
-	const edges = [...spanner.edges].map((edge) => {
-		const weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
-		edge.weight = weight;
-		return edge;
+	spanner.edges.forEach((edge) => {
+		edge.weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
 	});
-	spanner.edges = new Set(edges);
 
 	const difference: Edge[] = [];
 	graph.edges.forEach((edge) => {
-		if (!spanner.edges.has(edge)) {
+		if (!spanner.edges.has(edge.id)) {
 			difference.push(edge);
 		}
 	});
@@ -51,7 +48,7 @@ export async function edgePathBundlingGPUFloydWarshall(
 
 	let i = 0;
 	for (const shortestPath of shortestPaths) {
-		const edge = edges[i];
+		const edge = difference[i];
 		if (!edge) throw new Error('Edge not found');
 
 		if (shortestPath === null) {
@@ -68,5 +65,5 @@ export async function edgePathBundlingGPUFloydWarshall(
 		i++;
 	}
 
-	return bundeledEdges;
+	return { bundeledEdges, spanner };
 }

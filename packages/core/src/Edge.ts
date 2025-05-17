@@ -16,4 +16,8 @@ export class Edge {
 		this.start.edges.add(this.end);
 		this.end.edges.add(this.start);
 	}
+
+	get id() {
+		return `${this.start.id}_${this.end.id}`;
+	}
 }

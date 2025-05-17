@@ -1,9 +1,5 @@
 <script lang="ts">
-	import { Graph } from '@bachelor/core/Graph';
-	import { edgePathBundlingFloydGPU } from '@bachelor/core/edgePathBundlingFloydGPU';
-	import { drawBezierCurve } from '@bachelor/core/canvas';
-	import { drawGraph } from '$lib/canvas';
-	import type { Edge } from '@bachelor/core/Edge';
+	import { drawGraphAndBundledEdges } from '$lib/canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
@@ -12,6 +8,7 @@
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -31,29 +28,17 @@
 		runGPU();
 	});
 
-	function drawGraphAndBundledEdges(
-		graph: Graph,
-		bundeledEdges: { edge: Edge; controlPoints: { x: number; y: number }[] }[]
-	) {
-		console.time('Draw');
-		drawGraph({ ctx: context, graph, drawLabels: false, drawNodes: false, drawEdges: false });
-
-		bundeledEdges.forEach(({ edge, controlPoints }, i) => {
-			if (controlPoints.length === 0) return;
-			drawBezierCurve(context, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
-				width: 1,
-				color: 'color(srgb 1 0 0 / 0.2)',
-			});
-		});
-		console.timeEnd('Draw');
-	}
-
 	async function runGPU() {
 		const graph = await loadGraph(selectedGraph);
 		const spanner = await loadSpanner(selectedGraph);
 
+		// const spanner = greedySpanner(graph, maxDistortion);
+		console.log(spanner.nodes.size);
+
+		// drawGraph({ ctx: context, graph: spanner, drawLabels: true, drawNodes: true, drawEdges: true });
+
 		console.time('EPB');
-		const { bundeledEdges } = await edgePathBundlingFloydGPU(graph, {
+		const { bundeledEdges } = await edgePathBundlingGPUFloydWarshall(graph, {
 			device,
 			spanner,
 			maxDistortion,
@@ -61,7 +46,7 @@
 		});
 		console.timeEnd('EPB');
 
-		drawGraphAndBundledEdges(spanner, bundeledEdges);
+		drawGraphAndBundledEdges({ ctx: context, graph: spanner, bundeledEdges });
 	}
 </script>
 

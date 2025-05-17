@@ -1,9 +1,9 @@
-import { BufferData } from './BufferData';
-import shader from './compute.wgsl?raw';
-import { createGPUBuffer } from './GPUBuffer';
-import type { Graph } from './Graph';
-import type { Node } from './Node';
-import type { Path } from './path';
+import { BufferData } from '../../BufferData';
+import { createGPUBuffer } from '../../GPUBuffer';
+import type { Graph } from '../../Graph';
+import type { Node } from '../../Node';
+import type { Path } from '../../path';
+import shader from './shader.wgsl?raw';
 
 export type DijkstraGpuParams = {
 	device: GPUDevice;
@@ -19,7 +19,7 @@ export async function dijkstraGPU({
 	graph,
 	paths,
 }: DijkstraGpuParams): Promise<(Path | null)[]> {
-	const nodes = [...graph.nodes];
+	const nodes = [...graph.nodes.values()];
 
 	const list = graph.toAdjacencyList();
 	const nodesLength = list.nodes.length * paths.length;

@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { dijkstra } from '../src/dijkstra.js';
-import { dijkstraGPU } from '../src/dijkstraGPU.js';
-import { FloydWarshall } from '../src/floydWarshall.js';
 import { Graph } from '../src/Graph.js';
+import { dijkstra } from '../src/shortest-path/dijkstra/cpu.js';
+import { dijkstraGPU } from '../src/shortest-path/dijkstra/gpu.js';
+import { FloydWarshall } from '../src/shortest-path/floyd-warshall/FloydWarshall.js';
 import { initWebGPU } from '../src/webGpu.js';
 import { getShortestPathDataGouped, shortestPath } from './data.js';
 
@@ -15,7 +15,7 @@ describe('Shortest Path', () => {
 		const jsonGraph = await import(`../../app/src/lib/data/graphs/${params.file}.json`);
 		const graph = Graph.fromJSON(jsonGraph);
 
-		const nodes = [...graph.nodes];
+		const nodes = [...graph.nodes.values()];
 		const start = nodes[Number(params.start)];
 		const end = nodes[Number(params.end)];
 
@@ -48,7 +48,7 @@ describe('Shortest Path', () => {
 			const jsonGraph = await import(`../../app/src/lib/data/graphs/${file}.json`);
 			const graph = Graph.fromJSON(jsonGraph);
 
-			const nodes = [...graph.nodes];
+			const nodes = [...graph.nodes.values()];
 			const paths = params.map((p) => {
 				const start = nodes[Number(p.start)];
 				const end = nodes[Number(p.end)];
@@ -92,7 +92,7 @@ describe('Shortest Path', () => {
 		const jsonGraph = await import(`../../app/src/lib/data/graphs/${params.file}.json`);
 		const graph = Graph.fromJSON(jsonGraph);
 
-		const nodes = [...graph.nodes];
+		const nodes = [...graph.nodes.values()];
 		const start = nodes[Number(params.start)];
 		const end = nodes[Number(params.end)];
 
@@ -121,7 +121,7 @@ describe('Shortest Path', () => {
 			const jsonGraph = await import(`../../app/src/lib/data/graphs/${file}.json`);
 			const graph = Graph.fromJSON(jsonGraph);
 
-			const nodes = [...graph.nodes];
+			const nodes = [...graph.nodes.values()];
 			const paths = params.map((p) => {
 				const start = nodes[Number(p.start)];
 				const end = nodes[Number(p.end)];

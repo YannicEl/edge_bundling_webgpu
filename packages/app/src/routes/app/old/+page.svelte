@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Graph } from '@bachelor/core/Graph';
-	import { edgePathBundling } from '@bachelor/core/edgePathBundling';
-	import { edgePathBundlingGPU } from '@bachelor/core/edgePathBundlingGPU';
+	import { edgePathBundling } from '@bachelor/core/edge-path-bundling/dijkstra/cpu';
+	import { edgePathBundlingGPU } from '@bachelor/core/edge-path-bundling/dijkstra/gpu';
 	import { drawBezierCurve } from '@bachelor/core/canvas';
 	import { drawGraph } from '$lib/canvas';
 	import type { Edge } from '@bachelor/core/Edge';

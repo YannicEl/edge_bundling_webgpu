@@ -8,8 +8,8 @@
 	import type { Edge } from '@bachelor/core/Edge';
 	import { Graph } from '@bachelor/core/Graph';
 	import { drawBezierCurve } from '@bachelor/core/canvas';
-	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edgePathBundlingGPUFloydWarshall';
-	import { FloydWarshall } from '@bachelor/core/floydWarshall';
+	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
+	import { FloydWarshall } from '@bachelor/core/shortest-path/floyd-warshall/FloydWarshall';
 
 	const { canvas, context } = getCanvasState();
 	const { device } = getWebGPUState();

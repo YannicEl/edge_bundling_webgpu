@@ -12,12 +12,12 @@ export type AdjacencyList = {
 };
 
 export class Graph {
-	nodes: Set<Node>;
-	edges: Set<Edge>;
+	nodes: Map<string, Node>;
+	edges: Map<string, Edge>;
 
-	constructor(nodes: Node[] | Set<Node> = [], edges: Edge[] | Set<Edge> = []) {
-		this.nodes = new Set(nodes);
-		this.edges = new Set(edges);
+	constructor(nodes: Node[] | Map<string, Node> = [], edges: Edge[] | Map<string, Edge> = []) {
+		this.nodes = nodes instanceof Map ? nodes : new Map(nodes.map((node) => [node.id, node]));
+		this.edges = edges instanceof Map ? edges : new Map(edges.map((edge) => [edge.id, edge]));
 	}
 
 	static fromJSON(json: GraphJSON): Graph {
@@ -39,20 +39,24 @@ export class Graph {
 	}
 
 	toJSON(): GraphJSON {
-		const nodes = Array.from(this.nodes);
+		const nodes = Array.from(this.nodes.values());
 
 		return {
 			nodes: nodes.map(({ x, y }) => [x, y]),
-			edges: Array.from(this.edges).map(({ start, end }) => [
+			edges: Array.from(this.edges.values()).map(({ start, end }) => [
 				nodes.indexOf(start),
 				nodes.indexOf(end),
 			]),
 		};
 	}
 
+	clone(): Graph {
+		return Graph.fromJSON(this.toJSON());
+	}
+
 	toAdjacencyList(): AdjacencyList {
-		const nodes = [...this.nodes];
-		const edges = [...this.edges];
+		const nodes = [...this.nodes.values()];
+		const edges = [...this.edges.values()];
 		const list: AdjacencyList = { nodes: [], edges: [] };
 
 		let edgeIndex = 0;

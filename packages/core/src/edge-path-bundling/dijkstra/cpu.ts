@@ -1,7 +1,7 @@
-import { dijkstra } from './dijkstra';
-import type { Edge } from './Edge';
-import type { Graph } from './Graph';
-import { greedySpanner } from './spanner';
+import type { Edge } from '../../Edge';
+import type { Graph } from '../../Graph';
+import { dijkstra } from '../../shortest-path/dijkstra/cpu';
+import { greedySpanner } from '../../spanner/greedy';
 
 export type EdgePathBundlingParams = {
 	spanner?: Graph;
@@ -17,24 +17,14 @@ export function edgePathBundling(
 		spanner = greedySpanner(graph, maxDistortion);
 	}
 
-	const edges = [...spanner.edges].map((edge) => {
-		const weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
-		edge.weight = weight;
-		return edge;
+	spanner.edges.forEach((edge) => {
+		edge.weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
 	});
-	spanner.edges = new Set(edges);
 
 	const difference: Edge[] = [];
-	const nodes = [...spanner.nodes];
 	graph.edges.forEach((edge) => {
-		if (!spanner.edges.has(edge)) {
-			const start = nodes.find((node) => node.equals(edge.start));
-			const end = nodes.find((node) => node.equals(edge.end));
-			if (start && end) {
-				difference.push({ start, end, weight: edge.weight });
-			} else {
-				throw new Error('Edge not found in spanner');
-			}
+		if (!spanner.edges.has(edge.id)) {
+			difference.push(edge);
 		}
 	});
 
