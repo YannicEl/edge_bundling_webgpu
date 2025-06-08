@@ -1,7 +1,7 @@
 {
 	"name": "bachelor",
 	"type": "module",
-	"packageManager": "pnpm@10.11.0",
+	"packageManager": "pnpm@10.11.1",
 	"engines": {
 		"node": "22",
 		"pnpm": "10"
@@ -15,7 +15,7 @@
 		"prettier": "3.5.3",
 		"prettier-plugin-organize-imports": "4.1.0",
 		"prettier-plugin-svelte": "3.4.0",
-		"prettier-plugin-tailwindcss": "0.6.11"
+		"prettier-plugin-tailwindcss": "0.6.12"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
