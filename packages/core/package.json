@@ -14,9 +14,9 @@
 	},
 	"devDependencies": {
 		"@total-typescript/tsconfig": "1.0.4",
-		"@vitest/browser": "3.2.2",
+		"@vitest/browser": "3.2.4",
 		"@webgpu/types": "0.1.61",
-		"playwright": "1.52.0",
-		"vitest": "3.2.2"
+		"playwright": "1.53.1",
+		"vitest": "3.2.4"
 	}
 }
