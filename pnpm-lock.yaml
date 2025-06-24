@@ -9,17 +9,17 @@ importers:
   .:
     devDependencies:
       prettier:
-        specifier: 3.5.3
-        version: 3.5.3
+        specifier: 3.6.0
+        version: 3.6.0
       prettier-plugin-organize-imports:
         specifier: 4.1.0
-        version: 4.1.0(prettier@3.5.3)(typescript@5.8.3)
+        version: 4.1.0(prettier@3.6.0)(typescript@5.8.3)
       prettier-plugin-svelte:
         specifier: 3.4.0
-        version: 3.4.0(prettier@3.5.3)(svelte@5.34.7)
+        version: 3.4.0(prettier@3.6.0)(svelte@5.34.7)
       prettier-plugin-tailwindcss:
         specifier: 0.6.13
-        version: 0.6.13(prettier-plugin-organize-imports@4.1.0(prettier@3.5.3)(typescript@5.8.3))(prettier-plugin-svelte@3.4.0(prettier@3.5.3)(svelte@5.34.7))(prettier@3.5.3)
+        version: 0.6.13(prettier-plugin-organize-imports@4.1.0(prettier@3.6.0)(typescript@5.8.3))(prettier-plugin-svelte@3.4.0(prettier@3.6.0)(svelte@5.34.7))(prettier@3.6.0)
 
   packages/app:
     dependencies:
@@ -27,15 +27,15 @@ importers:
         specifier: 'workspace:'
         version: link:../core
       bits-ui:
-        specifier: 2.8.6
-        version: 2.8.6(@internationalized/date@3.8.2)(svelte@5.34.7)
+        specifier: 2.8.8
+        version: 2.8.8(@internationalized/date@3.8.2)(svelte@5.34.7)
     devDependencies:
       '@iconify-json/mdi':
         specifier: 1.2.3
         version: 1.2.3
       '@sveltejs/adapter-cloudflare':
         specifier: 7.0.4
-        version: 7.0.4(@sveltejs/kit@2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(wrangler@4.20.5)
+        version: 7.0.4(@sveltejs/kit@2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(wrangler@4.21.0)
       '@sveltejs/kit':
         specifier: 2.22.0
         version: 2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2))
@@ -67,8 +67,8 @@ importers:
         specifier: 6.3.5
         version: 6.3.5(jiti@2.4.2)
       wrangler:
-        specifier: 4.20.5
-        version: 4.20.5
+        specifier: 4.21.0
+        version: 4.21.0
 
   packages/core:
     devDependencies:
@@ -1031,8 +1031,8 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bits-ui@2.8.6:
-    resolution: {integrity: sha512-r6GMDXnRR6Y7iTmAHW6v7dJF+IGCkOg/bYTu9rAfuAnsr6H3WMO/OG0XioRRTZwKt2YG29e1JrjQavYh5OQ8FA==}
+  bits-ui@2.8.8:
+    resolution: {integrity: sha512-SFBFztROZf04e/zUsOlsbm4l6Nn5rBKAXS1nTWYJDxgbcFA+8DtjlZgbr03oFEkTcVZ5GAmLDIjbZ/KNg5GFxw==}
     engines: {node: '>=20'}
     peerDependencies:
       '@internationalized/date': ^3.8.1
@@ -1486,8 +1486,8 @@ packages:
       prettier-plugin-svelte:
         optional: true
 
-  prettier@3.5.3:
-    resolution: {integrity: sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==}
+  prettier@3.6.0:
+    resolution: {integrity: sha512-ujSB9uXHJKzM/2GBuE0hBOUgC77CN3Bnpqa+g80bkv3T3A93wL/xlzDATHhnhkzifz/UE2SNOvmbTz5hSkDlHw==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -1815,8 +1815,8 @@ packages:
     resolution: {integrity: sha512-+TvsA6VAVoMC3XDKR5MoC/qlLqDixEfOBysDEKnPIPou/NvoPWCAuXHXMsswwlvmEuvX56lQjvELLyLuzTKvRw==}
     engines: {node: '>=12'}
 
-  wrangler@4.20.5:
-    resolution: {integrity: sha512-tmiyt2vBHszhdzJEDbCpFLU2RiV7/QzvGMV07Zaz4ptqiU2h/lTojyNJAugPpSFNiOuY+k0g3ENNTDQqoUkMFA==}
+  wrangler@4.21.0:
+    resolution: {integrity: sha512-37xm0CG2qMvsJUNZYQKje6HbCsJFYuE8dQSnu7981iDRT4DLrEIL1DAUnZJG9HiXteKPvrSj96AkZyomi5sYHw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
@@ -2290,12 +2290,12 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  '@sveltejs/adapter-cloudflare@7.0.4(@sveltejs/kit@2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(wrangler@4.20.5)':
+  '@sveltejs/adapter-cloudflare@7.0.4(@sveltejs/kit@2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(wrangler@4.21.0)':
     dependencies:
       '@cloudflare/workers-types': 4.20250607.0
       '@sveltejs/kit': 2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2))
       worktop: 0.8.0-next.18
-      wrangler: 4.20.5
+      wrangler: 4.21.0
 
   '@sveltejs/kit@2.22.0(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2)))(svelte@5.34.7)(vite@6.3.5(jiti@2.4.2))':
     dependencies:
@@ -2677,7 +2677,7 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bits-ui@2.8.6(@internationalized/date@3.8.2)(svelte@5.34.7):
+  bits-ui@2.8.8(@internationalized/date@3.8.2)(svelte@5.34.7):
     dependencies:
       '@floating-ui/core': 1.7.1
       '@floating-ui/dom': 1.7.1
@@ -3054,24 +3054,24 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-organize-imports@4.1.0(prettier@3.5.3)(typescript@5.8.3):
+  prettier-plugin-organize-imports@4.1.0(prettier@3.6.0)(typescript@5.8.3):
     dependencies:
-      prettier: 3.5.3
+      prettier: 3.6.0
       typescript: 5.8.3
 
-  prettier-plugin-svelte@3.4.0(prettier@3.5.3)(svelte@5.34.7):
+  prettier-plugin-svelte@3.4.0(prettier@3.6.0)(svelte@5.34.7):
     dependencies:
-      prettier: 3.5.3
+      prettier: 3.6.0
       svelte: 5.34.7
 
-  prettier-plugin-tailwindcss@0.6.13(prettier-plugin-organize-imports@4.1.0(prettier@3.5.3)(typescript@5.8.3))(prettier-plugin-svelte@3.4.0(prettier@3.5.3)(svelte@5.34.7))(prettier@3.5.3):
+  prettier-plugin-tailwindcss@0.6.13(prettier-plugin-organize-imports@4.1.0(prettier@3.6.0)(typescript@5.8.3))(prettier-plugin-svelte@3.4.0(prettier@3.6.0)(svelte@5.34.7))(prettier@3.6.0):
     dependencies:
-      prettier: 3.5.3
+      prettier: 3.6.0
     optionalDependencies:
-      prettier-plugin-organize-imports: 4.1.0(prettier@3.5.3)(typescript@5.8.3)
-      prettier-plugin-svelte: 3.4.0(prettier@3.5.3)(svelte@5.34.7)
+      prettier-plugin-organize-imports: 4.1.0(prettier@3.6.0)(typescript@5.8.3)
+      prettier-plugin-svelte: 3.4.0(prettier@3.6.0)(svelte@5.34.7)
 
-  prettier@3.5.3: {}
+  prettier@3.6.0: {}
 
   pretty-format@27.5.1:
     dependencies:
@@ -3449,7 +3449,7 @@ snapshots:
       mrmime: 2.0.1
       regexparam: 3.0.0
 
-  wrangler@4.20.5:
+  wrangler@4.21.0:
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.0
       '@cloudflare/unenv-preset': 2.3.3(unenv@2.0.0-rc.17)(workerd@1.20250617.0)
