@@ -1,10 +1,19 @@
-export class AdjacencyMatrix {
-	size: number;
-	values: Float32Array;
+import type { TypedArray } from './BufferData';
 
-	constructor(size: number, values?: Float32Array) {
+export class AdjacencyMatrix<T extends TypedArray> {
+	size: number;
+	values: T;
+
+	constructor(size: number, values: T);
+	constructor(size: number, ArrayType: new (length: number) => T);
+	constructor(size: number, valuesOrArrayType: T | (new (length: number) => T)) {
 		this.size = size;
-		this.values = values ? values : new Float32Array(size * size);
+
+		if (typeof valuesOrArrayType === 'function') {
+			this.values = new valuesOrArrayType(size * size);
+		} else {
+			this.values = valuesOrArrayType;
+		}
 	}
 
 	get buffer() {

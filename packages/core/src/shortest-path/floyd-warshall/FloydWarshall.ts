@@ -1,8 +1,10 @@
 import { AdjacencyMatrix } from '../../AdjacencyMatrix';
+import { BufferData } from '../../BufferData';
 import { Edge } from '../../Edge';
 import type { Graph } from '../../Graph';
 import { Node } from '../../Node';
 import type { Path } from '../../path';
+import { mapAndReadBuffer } from '../../utils';
 import shader from './shader.wgsl?raw';
 
 export type FloydWarshallParams = {
@@ -17,9 +19,10 @@ export class FloydWarshall {
 
 	#pipeline: GPUComputePipeline | undefined;
 	#bindGroup: GPUBindGroup | undefined;
+	#shaderModule: GPUShaderModule | undefined;
 
-	distanceMatrix: AdjacencyMatrix;
-	nextMatrix: AdjacencyMatrix;
+	distanceMatrix: AdjacencyMatrix<Float32Array>;
+	nextMatrix: AdjacencyMatrix<Uint32Array>;
 
 	#distanceMatrixBuffer: GPUBuffer | undefined;
 	#distanceMatrixReadBuffer: GPUBuffer | undefined;
@@ -30,8 +33,8 @@ export class FloydWarshall {
 	constructor({ graph, device, edgeWeightFactor = 1 }: FloydWarshallParams) {
 		this.graph = graph;
 		this.#device = device;
-		this.distanceMatrix = new AdjacencyMatrix(graph.nodes.size);
-		this.nextMatrix = new AdjacencyMatrix(graph.nodes.size);
+		this.distanceMatrix = new AdjacencyMatrix(graph.nodes.size, Float32Array);
+		this.nextMatrix = new AdjacencyMatrix(graph.nodes.size, Uint32Array);
 
 		const nodes = [...graph.nodes.values()];
 		for (let x = 0; x < this.distanceMatrix.size; x++) {
@@ -94,13 +97,16 @@ export class FloydWarshall {
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 		});
 
+		this.#shaderModule = this.#device.createShaderModule({ code: shader });
+
 		this.#pipeline = await this.#device.createComputePipelineAsync({
 			label: 'compute pipeline',
 			layout: 'auto',
 			compute: {
-				module: this.#device.createShaderModule({ code: shader }),
+				entryPoint: 'compute_matrix',
+				module: this.#shaderModule,
 				constants: {
-					distance_matrix_size: this.distanceMatrix.size,
+					node_count: this.distanceMatrix.size,
 				},
 			},
 		});
@@ -160,46 +166,145 @@ export class FloydWarshall {
 		const distances = new Float32Array(await this.#distanceMatrixReadBuffer!.getMappedRange());
 
 		await this.#nextMatrixReadBuffer!.mapAsync(GPUMapMode.READ);
-		const next = new Float32Array(await this.#nextMatrixReadBuffer!.getMappedRange());
+		const next = new Uint32Array(await this.#nextMatrixReadBuffer!.getMappedRange());
 		this.distanceMatrix.values = distances;
 		this.nextMatrix.values = next;
 	}
 
-	shortestPaths(paths: { start: Node; end: Node }[]): (Path | null)[] {
+	async shortestPaths(paths: { start: Node; end: Node }[]): Promise<(Path | null)[]> {
 		const nodes = [...this.graph.nodes];
+
+		const pathsBufferData = new BufferData(
+			{
+				start: 'uint',
+				end: 'uint',
+			},
+			paths.length
+		);
+
+		for (let i = 0; i < paths.length; i++) {
+			const { start, end } = paths[i]!;
+			const startIndex = nodes.findIndex(([_, node]) => node.equals(start));
+			const endIndex = nodes.findIndex(([_, node]) => node.equals(end));
+
+			pathsBufferData.set(
+				{
+					start: startIndex,
+					end: endIndex,
+				},
+				i
+			);
+		}
+
+		const pathsBuffer = this.#device.createBuffer({
+			label: 'Paths Buffer',
+			size: pathsBufferData.buffer.byteLength,
+			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+		});
+
+		this.#device.queue.writeBuffer(pathsBuffer, 0, pathsBufferData.buffer);
+
+		const shortestPathsDistancesBuffer = this.#device.createBuffer({
+			size: paths.length * 4,
+			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+		});
+
+		const shortestPathsDistancesReadBuffer = this.#device.createBuffer({
+			size: paths.length * 4,
+			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+		});
+
+		const shortestPathsNodesBuffer = this.#device.createBuffer({
+			size: nodes.length * paths.length * 4,
+			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+		});
+
+		const shortestPathsNodesReadBuffer = this.#device.createBuffer({
+			size: nodes.length * paths.length * 4,
+			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+		});
+
+		const pipeline = await this.#device.createComputePipelineAsync({
+			label: 'Compute Shortest Paths Pipeline',
+			layout: 'auto',
+			compute: {
+				entryPoint: 'compute_shortest_paths',
+				module: this.#shaderModule!,
+				constants: {
+					node_count: this.distanceMatrix.size,
+				},
+			},
+		});
+
+		const bindGroup = this.#device.createBindGroup({
+			label: 'Compute Shortest Paths Bind Group',
+			layout: pipeline.getBindGroupLayout(0),
+			entries: [
+				{ binding: 0, resource: { buffer: this.#distanceMatrixBuffer! } },
+				{ binding: 1, resource: { buffer: this.#nextMatrixBuffer! } },
+				{ binding: 3, resource: { buffer: pathsBuffer } },
+				{ binding: 4, resource: { buffer: shortestPathsDistancesBuffer } },
+				{ binding: 5, resource: { buffer: shortestPathsNodesBuffer } },
+			],
+		});
+
+		const encoder = this.#device.createCommandEncoder({ label: 'compute shortest paths encoder' });
+		const pass = encoder.beginComputePass({ label: 'compute shortest paths pass' });
+
+		pass.setPipeline(pipeline);
+		pass.setBindGroup(0, bindGroup);
+		pass.dispatchWorkgroups(Math.ceil(paths.length / 64));
+		pass.end();
+
+		encoder.copyBufferToBuffer(
+			shortestPathsDistancesBuffer,
+			0,
+			shortestPathsDistancesReadBuffer,
+			0,
+			paths.length * 4
+		);
+
+		encoder.copyBufferToBuffer(
+			shortestPathsNodesBuffer,
+			0,
+			shortestPathsNodesReadBuffer,
+			0,
+			nodes.length * paths.length * 4
+		);
+
+		const commandBuffer = encoder.finish();
+		this.#device.queue.submit([commandBuffer]);
+
+		const shortestPathsDistancesData = await mapAndReadBuffer(
+			shortestPathsDistancesReadBuffer,
+			Float32Array
+		);
+		const shortestPathsNodesData = await mapAndReadBuffer(
+			shortestPathsNodesReadBuffer,
+			Uint32Array
+		);
 
 		const ret: (Path | null)[] = [];
 
-		for (const { start, end } of paths) {
-			const startIndex = nodes.findIndex(([id, node]) => node.equals(start));
-			const endIndex = nodes.findIndex(([id, node]) => node.equals(end));
+		for (let i = 0; i < paths.length; i++) {
+			const endIndex = pathsBufferData.get('end', i)[0]!;
 
-			const distance = this.distanceMatrix.get(startIndex, endIndex);
-			if (distance === undefined || distance === Infinity) {
-				ret.push(null);
-				continue;
-			}
+			const tempNodes: Node[] = [];
 
-			const path: Node[] = [];
+			for (let j = 0; j < nodes.length; j++) {
+				const nodeIndex = shortestPathsNodesData[i * nodes.length + j]!;
 
-			if (this.nextMatrix.get(startIndex, endIndex) === -1) {
-				ret.push(null);
-				continue;
-			}
-
-			path.push(start);
-
-			let newStartIndex = startIndex;
-			while (newStartIndex !== endIndex) {
-				newStartIndex = this.nextMatrix.get(newStartIndex, endIndex);
-				const node = nodes[newStartIndex];
+				const node = nodes[nodeIndex]?.[1];
 				if (!node) throw new Error('Node not found');
-				path.push(node[1]);
+
+				tempNodes.push(node);
+
+				if (nodeIndex === endIndex) break;
 			}
 
 			ret.push({
-				length: distance,
-				nodes: path,
+				length: shortestPathsDistancesData[i]!,
+				nodes: tempNodes,
 			});
 		}
 

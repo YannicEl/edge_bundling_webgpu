@@ -7,4 +7,4 @@ onlyBuiltDependencies:
   - sharp
   - workerd
 
-enableGlobalVirtualStore: true
+enableGlobalVirtualStore: false
