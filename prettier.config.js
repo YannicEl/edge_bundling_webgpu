@@ -6,6 +6,7 @@ const config = {
 	printWidth: 100,
 	trailingComma: 'es5',
 	plugins: [
+		'@prettier/plugin-oxc',
 		'prettier-plugin-svelte',
 		'prettier-plugin-organize-imports',
 		'prettier-plugin-tailwindcss',
