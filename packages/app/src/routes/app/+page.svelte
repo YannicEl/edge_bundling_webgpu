@@ -7,7 +7,8 @@
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
+	import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
+	import { onMount } from 'svelte';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -18,26 +19,42 @@
 	});
 
 	let maxDistortion = $state<number>(2);
-	let edgeWeightFactor = $state<number>(1);
+	let edgeWeightFactor = $state<number>(2);
+	let epb: EdgePathBundlingGPUFloydWarshall;
 
 	canvas.onResize = () => runGPU();
 
+	// $effect(() => {
+	// 	console.log({ maxDistortion, edgeWeightFactor });
+	// 	runGPU();
+	// });
+
 	$effect(() => {
-		console.log({ maxDistortion, edgeWeightFactor });
+		console.log({ edgeWeightFactor });
+		if (!epb) return;
+		epb.setEdgeWeightFactor(edgeWeightFactor).then(() => runGPU());
+	});
+
+	onMount(async () => {
+		const graph = await loadGraph(selectedGraph);
+		const spanner = await loadSpanner(selectedGraph);
+
+		epb = new EdgePathBundlingGPUFloydWarshall({
+			graph,
+			spanner,
+			maxDistortion,
+			edgeWeightFactor,
+			device,
+		});
+
 		runGPU();
 	});
 
 	async function runGPU() {
-		const graph = await loadGraph(selectedGraph);
-		const spanner = await loadSpanner(selectedGraph);
+		if (!epb) return;
 
 		console.time('EPB');
-		const { bundeledEdges } = await edgePathBundlingGPUFloydWarshall(graph, {
-			device,
-			spanner,
-			maxDistortion,
-			edgeWeightFactor,
-		});
+		const { bundeledEdges, spanner } = await epb.bundle();
 		console.timeEnd('EPB');
 
 		drawGraphAndBundledEdges({ ctx: context, graph: spanner, bundeledEdges });
@@ -69,6 +86,4 @@
 	<button onclick={runGPU}>Run GPU</button>
 
 	<a href="/">back</a>
-	<a href="/app?graph=migration">old</a>
-	<a href="/app/new?graph=migration">new</a>
 </ControlPanel>

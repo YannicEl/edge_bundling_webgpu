@@ -31,13 +31,19 @@ override node_count: u32;
 
   var distance_through_k: f32;
   if(uniforms.k == 0) {
-    distance_through_k = pow(distance_matrix_get(x, k), 1);
-    distance_through_k += pow(distance_matrix_get(k, y), 1);
+    distance_through_k = pow(distance_matrix_get(x, k), uniforms.edge_weight_factor) + pow(distance_matrix_get(k, y), uniforms.edge_weight_factor);
   } else {
     distance_through_k = distance_matrix_get(x, k) + distance_matrix_get(k, y);
   }
 
-  if (distance_through_k < distance_matrix_get(x, y)) {
+  var distance: f32;
+  if(uniforms.k == 0) {
+    distance = pow(distance_matrix_get(x, y), uniforms.edge_weight_factor);
+  } else {
+    distance = distance_matrix_get(x, y);
+  }
+
+  if (distance_through_k < distance) {
     distance_matrix_set(x, y, distance_through_k);
     next_matrix_set(x, y, next_matrix_get(x, k));
   }
