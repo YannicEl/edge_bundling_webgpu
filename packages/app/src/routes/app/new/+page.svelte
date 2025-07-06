@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { drawGraphAndBundledEdges } from '$lib/canvas';
+	import { drawGraphAndBundledEdges } from '$lib/_canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
-	import { loadGraph } from '$lib/loadGraph';
-	import { loadSpanner } from '$lib/loadGraph';
+	import { loadGraph, loadSpanner } from '$lib/_loadGraph';
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
+	import { edgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/_gpu';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -25,6 +24,7 @@
 
 	$effect(() => {
 		console.log({ maxDistortion, edgeWeightFactor });
+
 		runGPU();
 	});
 

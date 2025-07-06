@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { Graph } from '../src/Graph.js';
+import { Graph as GraphNew } from '../src/AdjacencyList.js';
 import { dijkstra } from '../src/shortest-path/dijkstra/cpu.js';
 import { dijkstraGPU } from '../src/shortest-path/dijkstra/gpu.js';
-import { FloydWarshall } from '../src/shortest-path/floyd-warshall/FloydWarshall.js';
+import { FloydWarshall } from '../src/shortest-path/floyd-warshall/_FloydWarshall.js';
 import { initWebGPU } from '../src/webGpu.js';
 import { getShortestPathDataGouped, shortestPath } from './data.js';
 
@@ -119,31 +120,18 @@ describe('Shortest Path', () => {
 			const { device } = await initWebGPU();
 
 			const jsonGraph = await import(`../../app/src/lib/data/graphs/${file}.json`);
-			const graph = Graph.fromJSON(jsonGraph);
+			const graph = GraphNew.fromJSON(jsonGraph);
 
-			const nodes = [...graph.nodes.values()];
-			const paths = params.map((p) => {
-				const start = nodes[Number(p.start)];
-				const end = nodes[Number(p.end)];
-
-				expect(start).toBeTruthy();
-				expect(end).toBeTruthy();
-
-				if (!start || !end) {
-					throw new Error('Node not found');
-				}
-
-				return {
-					start,
-					end,
-				};
-			});
+			const paths = params.map(({ start, end }) => ({
+				start,
+				end,
+			}));
 
 			const floydWarshall = new FloydWarshall({ graph, device });
 			await floydWarshall.init();
 			await floydWarshall.compute();
 
-			const shortestPaths = floydWarshall.shortestPaths(paths);
+			const shortestPaths = await floydWarshall.shortestPaths(paths);
 
 			expect(shortestPaths).toBeInstanceOf(Array);
 
@@ -156,7 +144,7 @@ describe('Shortest Path', () => {
 
 				if (!expected) throw new Error('No expected path found');
 				expect(path.length.toFixed(3)).toBe(expected.length.toFixed(3));
-				expect(path.nodes.map((node) => nodes.indexOf(node))).toEqual(expected.path);
+				expect(path.nodes).toEqual(expected.path);
 			});
 		}
 	);

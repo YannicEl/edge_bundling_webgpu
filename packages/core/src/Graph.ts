@@ -2,8 +2,8 @@ import { Edge } from './Edge';
 import { Node } from './Node';
 
 export type GraphJSON = {
-	nodes: [number, number][];
-	edges: [number, number][];
+	nodes: [x: number, y: number][];
+	edges: [start: number, end: number][];
 };
 
 export type AdjacencyList = {

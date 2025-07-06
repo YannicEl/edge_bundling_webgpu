@@ -1,6 +1,6 @@
 import type { Node } from './Node';
 
 export type Path = {
-	nodes: Node[];
+	nodes: (Node | number)[];
 	length: number;
 };
