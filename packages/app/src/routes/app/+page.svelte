@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { drawGraphAndBundledEdges } from '$lib/canvas';
+	import { drawGraphAndBundledEdges } from '$lib/_canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
-	import { loadGraph } from '$lib/loadGraph';
-	import { loadSpanner } from '$lib/loadGraph';
+	import { loadGraph, loadSpanner } from '$lib/_loadGraph';
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';

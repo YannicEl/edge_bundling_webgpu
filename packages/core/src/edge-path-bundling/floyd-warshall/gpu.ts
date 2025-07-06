@@ -1,11 +1,11 @@
-import type { Edge } from '../../Edge';
-import type { Graph } from '../../Graph';
+import type { Edge } from '../../AdjacencyList';
+import type { Graph } from '../../AdjacencyList';
 import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
 import { greedySpanner } from '../../spanner/greedy';
 
 export type EdgePathBundlingGPUFloydWarshallParams = {
 	device: GPUDevice;
-	spanner?: Graph;
+	spanner: Graph;
 	maxDistortion?: number;
 	edgeWeightFactor?: number;
 };
@@ -19,28 +19,36 @@ export async function edgePathBundlingGPUFloydWarshall(
 		edgeWeightFactor = 1,
 	}: EdgePathBundlingGPUFloydWarshallParams
 ) {
-	if (!spanner) {
-		spanner = greedySpanner(graph, maxDistortion);
-	}
+	// if (!spanner) {
+	// 	spanner = greedySpanner(graph, maxDistortion);
+	// }
 
-	spanner.edges.forEach((edge) => {
-		edge.weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
-	});
-
+	console.time('Difference');
 	const difference: Edge[] = [];
-	graph.edges.forEach((edge) => {
-		if (!spanner.edges.has(edge.id)) {
+	graph.edges.forEach((edge, key) => {
+		if (!spanner.edges.has(key)) {
 			difference.push(edge);
 		}
 	});
+	console.timeEnd('Difference');
 
-	const floydWarshall = new FloydWarshall({ graph: spanner, device });
+	console.time('Floyd Warshall');
+	const floydWarshall = new FloydWarshall({ graph: spanner, device, edgeWeightFactor });
+	console.timeEnd('Floyd Warshall');
+
+	console.time('Floyd Warshall Init');
 	await floydWarshall.init();
-	await floydWarshall.compute();
-	const shortestPaths = await floydWarshall.shortestPaths(
-		difference.map((edge) => ({ start: edge.start, end: edge.end }))
-	);
+	console.timeEnd('Floyd Warshall Init');
 
+	console.time('Floyd Warshall Compute');
+	await floydWarshall.compute();
+	console.timeEnd('Floyd Warshall Compute');
+
+	console.time('Floyd Warshall Shortest Paths');
+	const shortestPaths = await floydWarshall.shortestPaths(difference);
+	console.timeEnd('Floyd Warshall Shortest Paths');
+
+	console.time('Bundeling');
 	const bundeledEdges: {
 		edge: Edge;
 		controlPoints: { x: number; y: number }[];
@@ -58,12 +66,17 @@ export async function edgePathBundlingGPUFloydWarshall(
 		if (shortestPath.length <= maxDistortion * edge.weight) {
 			bundeledEdges.push({
 				edge,
-				controlPoints: shortestPath.nodes.slice(1, -1).map(({ x, y }) => ({ x, y })),
+				controlPoints: shortestPath.nodes.slice(1, -1).map((nodeIndex) => {
+					const node = graph.nodes.get(nodeIndex);
+					if (!node) throw new Error('Node not found');
+					return { x: node.x, y: node.y };
+				}),
 			});
 		}
 
 		i++;
 	}
+	console.timeEnd('Bundeling');
 
 	return { bundeledEdges, spanner };
 }

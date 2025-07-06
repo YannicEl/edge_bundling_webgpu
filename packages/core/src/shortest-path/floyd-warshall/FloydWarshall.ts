@@ -1,11 +1,10 @@
 import { AdjacencyMatrix } from '../../AdjacencyMatrix';
 import { BufferData } from '../../BufferData';
-import { Edge } from '../../Edge';
-import type { Graph } from '../../Graph';
-import { Node } from '../../Node';
+import type { Edge, Graph, Node } from '../../AdjacencyList';
 import type { Path } from '../../path';
 import { mapAndReadBuffer } from '../../utils';
 import shader from './shader.wgsl?raw';
+import { writeGPUBuffer } from '../../GPUBuffer';
 
 export type FloydWarshallParams = {
 	graph: Graph;
@@ -28,7 +27,9 @@ export class FloydWarshall {
 	#distanceMatrixReadBuffer: GPUBuffer | undefined;
 	#nextMatrixBuffer: GPUBuffer | undefined;
 	#nextMatrixReadBuffer: GPUBuffer | undefined;
-	#kBuffer: GPUBuffer | undefined;
+
+	#uniformsBufferData: BufferData<{ k: 'uint'; edge_weight_factor: 'float' }>;
+	#uniformsBuffer: GPUBuffer | undefined;
 
 	constructor({ graph, device, edgeWeightFactor = 1 }: FloydWarshallParams) {
 		this.graph = graph;
@@ -36,7 +37,12 @@ export class FloydWarshall {
 		this.distanceMatrix = new AdjacencyMatrix(graph.nodes.size, Float32Array);
 		this.nextMatrix = new AdjacencyMatrix(graph.nodes.size, Uint32Array);
 
-		const nodes = [...graph.nodes.values()];
+		this.#uniformsBufferData = new BufferData({
+			k: 'uint',
+			edge_weight_factor: 'float',
+		});
+		this.#uniformsBufferData.set({ edge_weight_factor: edgeWeightFactor });
+
 		for (let x = 0; x < this.distanceMatrix.size; x++) {
 			for (let y = 0; y < this.distanceMatrix.size; y++) {
 				if (x === y) {
@@ -44,16 +50,19 @@ export class FloydWarshall {
 					continue;
 				}
 
-				const node1 = nodes[x];
-				const node2 = nodes[y];
-				if (!node1 || !node2) {
-					throw new Error('Node not found');
-				}
+				const node1 = graph.nodes.get(x);
+				const node2 = graph.nodes.get(y);
+				if (!node1 || !node2) throw new Error('Node not found');
 
-				let edge = null;
-				if (node1.edges.has(node2) && node2.edges.has(node1)) {
-					edge = new Edge(node1, node2);
-					edge.weight = Math.pow(Math.abs(edge.weight), edgeWeightFactor);
+				let edge: Edge | null = null;
+				if (graph.adjacencyList.get(x)?.has(y) && graph.adjacencyList.get(y)?.has(x)) {
+					const weight = Math.sqrt(Math.pow(node2.x - node1.x, 2) + Math.pow(node2.y - node1.y, 2));
+
+					edge = {
+						start: x,
+						end: y,
+						weight,
+					};
 				}
 
 				if (edge) {
@@ -92,8 +101,8 @@ export class FloydWarshall {
 			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 		});
 
-		this.#kBuffer = this.#device.createBuffer({
-			size: 4,
+		this.#uniformsBuffer = this.#device.createBuffer({
+			size: this.#uniformsBufferData.buffer.byteLength,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 		});
 
@@ -117,14 +126,20 @@ export class FloydWarshall {
 			entries: [
 				{ binding: 0, resource: { buffer: this.#distanceMatrixBuffer } },
 				{ binding: 1, resource: { buffer: this.#nextMatrixBuffer } },
-				{ binding: 2, resource: { buffer: this.#kBuffer } },
+				{ binding: 2, resource: { buffer: this.#uniformsBuffer } },
 			],
 		});
 	}
 
 	async compute() {
 		for (let k = 0; k < this.distanceMatrix.size; ++k) {
-			this.#device.queue.writeBuffer(this.#kBuffer!, 0, new Uint32Array([k]).buffer);
+			this.#uniformsBufferData.set({ k });
+
+			writeGPUBuffer({
+				device: this.#device,
+				buffer: this.#uniformsBuffer!,
+				data: this.#uniformsBufferData,
+			});
 
 			// Encode commands to do the computation
 			const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
@@ -171,9 +186,8 @@ export class FloydWarshall {
 		this.nextMatrix.values = next;
 	}
 
-	async shortestPaths(paths: { start: Node; end: Node }[]): Promise<(Path | null)[]> {
-		const nodes = [...this.graph.nodes];
-
+	async shortestPaths(paths: { start: number; end: number }[]): Promise<(Path | null)[]> {
+		console.time('Shortest Paths Buffer Data');
 		const pathsBufferData = new BufferData(
 			{
 				start: 'uint',
@@ -184,18 +198,11 @@ export class FloydWarshall {
 
 		for (let i = 0; i < paths.length; i++) {
 			const { start, end } = paths[i]!;
-			const startIndex = nodes.findIndex(([_, node]) => node.equals(start));
-			const endIndex = nodes.findIndex(([_, node]) => node.equals(end));
-
-			pathsBufferData.set(
-				{
-					start: startIndex,
-					end: endIndex,
-				},
-				i
-			);
+			pathsBufferData.set({ start, end }, i);
 		}
+		console.timeEnd('Shortest Paths Buffer Data');
 
+		console.time('Shortest Paths Buffer Compute');
 		const pathsBuffer = this.#device.createBuffer({
 			label: 'Paths Buffer',
 			size: pathsBufferData.buffer.byteLength,
@@ -215,12 +222,12 @@ export class FloydWarshall {
 		});
 
 		const shortestPathsNodesBuffer = this.#device.createBuffer({
-			size: nodes.length * paths.length * 4,
+			size: this.graph.nodes.size * paths.length * 4,
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
 		});
 
 		const shortestPathsNodesReadBuffer = this.#device.createBuffer({
-			size: nodes.length * paths.length * 4,
+			size: this.graph.nodes.size * paths.length * 4,
 			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 		});
 
@@ -269,7 +276,7 @@ export class FloydWarshall {
 			0,
 			shortestPathsNodesReadBuffer,
 			0,
-			nodes.length * paths.length * 4
+			this.graph.nodes.size * paths.length * 4
 		);
 
 		const commandBuffer = encoder.finish();
@@ -283,30 +290,29 @@ export class FloydWarshall {
 			shortestPathsNodesReadBuffer,
 			Uint32Array
 		);
+		console.timeEnd('Shortest Paths Buffer Compute');
 
+		console.time('Shortest Paths Buffer Map');
 		const ret: (Path | null)[] = [];
 
 		for (let i = 0; i < paths.length; i++) {
 			const endIndex = pathsBufferData.get('end', i)[0]!;
 
-			const tempNodes: Node[] = [];
+			const nodes: number[] = [];
 
-			for (let j = 0; j < nodes.length; j++) {
-				const nodeIndex = shortestPathsNodesData[i * nodes.length + j]!;
-
-				const node = nodes[nodeIndex]?.[1];
-				if (!node) throw new Error('Node not found');
-
-				tempNodes.push(node);
+			for (let j = 0; j < this.graph.nodes.size; j++) {
+				const nodeIndex = shortestPathsNodesData[i * this.graph.nodes.size + j]!;
+				nodes.push(nodeIndex);
 
 				if (nodeIndex === endIndex) break;
 			}
 
 			ret.push({
 				length: shortestPathsDistancesData[i]!,
-				nodes: tempNodes,
+				nodes,
 			});
 		}
+		console.timeEnd('Shortest Paths Buffer Map');
 
 		return ret;
 	}
