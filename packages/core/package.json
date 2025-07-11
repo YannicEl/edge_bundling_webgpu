@@ -16,7 +16,7 @@
 		"@total-typescript/tsconfig": "1.0.4",
 		"@vitest/browser": "3.2.4",
 		"@webgpu/types": "0.1.64",
-		"playwright": "1.53.2",
+		"playwright": "1.54.1",
 		"vitest": "3.2.4"
 	}
 }
