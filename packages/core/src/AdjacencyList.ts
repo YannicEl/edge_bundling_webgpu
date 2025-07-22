@@ -62,4 +62,11 @@ export class Graph {
 
 		return graph;
 	}
+
+	toJSON(): GraphJSON {
+		return {
+			nodes: Array.from(this.nodes.values()).map(({ x, y }) => [x, y]),
+			edges: Array.from(this.edges.values()).map(({ start, end }) => [start, end]),
+		};
+	}
 }
