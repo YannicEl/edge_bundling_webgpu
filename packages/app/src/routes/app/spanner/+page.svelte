@@ -9,6 +9,7 @@
 	import { goto } from '$app/navigation';
 	import { GreedySpanner } from '@bachelor/core/spanner/gpu';
 	import { onMount } from 'svelte';
+	import { drawGraph } from '$lib/_canvas';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -26,7 +27,7 @@
 	onMount(async () => {
 		const graph = await loadGraph(selectedGraph);
 
-		spanner = new GreedySpanner({ graph, device, maxDistortion });
+		spanner = new GreedySpanner({ graph, device });
 
 		runGPU();
 	});
@@ -35,20 +36,21 @@
 		if (!spanner) return;
 
 		console.time('Spanner');
-		const lol = await spanner.compute();
+		const graph = await spanner.compute();
 		console.timeEnd('Spanner');
 
+		const graphControl = await loadGraph(selectedGraph);
 		const spannerControl = await loadSpanner(selectedGraph);
-		console.log(spannerControl);
-		console.log(JSON.stringify(spannerControl.toJSON()));
+		// console.log(spannerControl);
+		// console.log(JSON.stringify(spannerControl.toJSON()));
 
-		console.log(lol);
-		console.log(JSON.stringify(lol.toJSON()));
+		// console.log(lol);
+		// console.log(JSON.stringify(lol.toJSON()));
 
-		const isSame = JSON.stringify(spannerControl.toJSON()) === JSON.stringify(lol.toJSON());
-		console.log({ isSame });
+		// const isSame = JSON.stringify(spannerControl.toJSON()) === JSON.stringify(lol.toJSON());
+		// console.log({ isSame });
 
-		drawGraphAndBundledEdges({ ctx: context, graph: lol, bundeledEdges: [] });
+		drawGraph({ ctx: context, graph: spannerControl, drawLabels: false });
 	}
 </script>
 

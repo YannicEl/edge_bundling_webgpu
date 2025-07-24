@@ -2,6 +2,7 @@ import type { BufferData } from './BufferData';
 
 export type CreateGPUBufferParams = {
 	device: GPUDevice;
+	label?: string;
 	data: BufferData;
 	usage: GPUBufferUsageFlags;
 	write?: boolean;
@@ -9,11 +10,13 @@ export type CreateGPUBufferParams = {
 
 export function createGPUBuffer({
 	device,
+	label,
 	data,
 	usage,
 	write = true,
 }: CreateGPUBufferParams): GPUBuffer {
 	const buffer = device.createBuffer({
+		label,
 		size: data.buffer.byteLength,
 		usage,
 	});

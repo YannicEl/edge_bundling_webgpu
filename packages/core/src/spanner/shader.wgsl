@@ -1,27 +1,40 @@
-struct Positions { data : array<vec2<f32>>; };
-struct Edge      { a : u32, b : u32 };
+struct Position { 
+  x : f32,
+  y : f32,
+}
 
-@group(0) @binding(0) var<storage, read>       positions : Positions;
-@group(0) @binding(1) var<storage, read_write> edges     : array<Edge>;
-@group(0) @binding(2) var<storage, read_write> counter   : atomic<u32>;
-struct Uniforms { n : u32 };
-@group(0) @binding(3) var<uniform> uniforms : Uniforms;
+struct Edge {
+  start: u32,
+  end: u32,
+}
 
-const K       : u32 = 8u;
+struct Uniforms {
+  k: u32,
+  node_count: u32,
+}
+
+@group(0) @binding(0) var<storage, read> positions: array<Position>;
+@group(0) @binding(1) var<storage, read_write> edges: array<Edge>;
+@group(0) @binding(2) var<storage, read_write> counter: atomic<u32>;
+@group(0) @binding(3) var<uniform> uniforms: Uniforms;
+
+const K       : u32 = 16u;
 const TILE    : u32 = 64u;
 const TWO_PI  : f32 = 6.28318530718;
 const THETA   : f32 = TWO_PI / f32(K);
 
-var<workgroup> shPos : array<vec2<f32>, TILE>;
-var<workgroup> shIdx : array<u32,      TILE>;
+var<workgroup> shPos : array<Position, TILE>;
+var<workgroup> shIdx : array<u32, TILE>;
 
-@compute @workgroup_size(${WORKGROUP})
-fn main(@builtin(global_invocation_id) gid : vec3<u32>,
-        @builtin(local_invocation_id)  lid : vec3<u32>) {
-    let i = gid.x;
-    if (i >= uniforms.n) { return; }
+@compute @workgroup_size(TILE)
+fn compute(
+  @builtin(global_invocation_id) global_id : vec3<u32>,
+  @builtin(local_invocation_id) local_id : vec3<u32>
+) {
+    let i = global_id.x;
+    // if (i >= uniforms.node_count) { return; }
 
-    let vi = positions.data[i];
+    let vi = positions[i];
 
     // best candidate per cone
     var bestDist : array<f32, K>;
@@ -34,21 +47,22 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>,
     // tiled sweep over all points
     var base : u32 = 0u;
     loop {
-        if (base >= uniforms.n) { break; }
+        if (base >= uniforms.node_count) { break; }
 
-        let loc = lid.x;
-        if (base + loc < uniforms.n) {
-            shPos[loc] = positions.data[base + loc];
+        let loc = local_id.x;
+        if (base + loc < uniforms.node_count) {
+            shPos[loc] = positions[base + loc];
             shIdx[loc] = base + loc;
         }
+
         workgroupBarrier();
 
-        let lim = min(TILE, uniforms.n - base);
+        let lim = min(TILE, uniforms.node_count - base);
         for (var j : u32 = 0u; j < lim; j = j + 1u) {
             let idx = shIdx[j];
             if (idx == i) { continue; }
 
-            let d = shPos[j] - vi;
+            let d = vec2<f32>(shPos[j].x - vi.x, shPos[j].y - vi.y);
             var phi = atan2(d.y, d.x);
             if (phi < 0.0) { phi = phi + TWO_PI; }
             let cone = u32(floor(phi / THETA));
