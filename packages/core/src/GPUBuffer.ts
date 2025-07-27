@@ -3,7 +3,7 @@ import type { BufferData } from './BufferData';
 export type CreateGPUBufferParams = {
 	device: GPUDevice;
 	label?: string;
-	data: BufferData;
+	data: BufferData | ArrayBuffer;
 	usage: GPUBufferUsageFlags;
 	write?: boolean;
 };
@@ -17,7 +17,7 @@ export function createGPUBuffer({
 }: CreateGPUBufferParams): GPUBuffer {
 	const buffer = device.createBuffer({
 		label,
-		size: data.buffer.byteLength,
+		size: data instanceof ArrayBuffer ? data.byteLength : data.buffer.byteLength,
 		usage,
 	});
 
@@ -31,9 +31,9 @@ export function createGPUBuffer({
 export type WriteGPUBufferParams = {
 	device: GPUDevice;
 	buffer: GPUBuffer;
-	data: BufferData;
+	data: BufferData | ArrayBuffer;
 };
 
 export function writeGPUBuffer({ device, buffer, data }: WriteGPUBufferParams) {
-	device.queue.writeBuffer(buffer, 0, data.buffer);
+	device.queue.writeBuffer(buffer, 0, data instanceof ArrayBuffer ? data : data.buffer);
 }

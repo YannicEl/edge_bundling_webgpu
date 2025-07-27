@@ -1,5 +1,6 @@
 import type { Edge, Graph } from '@bachelor/core/AdjacencyList';
 import { drawBezierCurve, drawCircle, drawLine } from '@bachelor/core/canvas';
+import type { BundledEdge } from '@bachelor/core/edge-path-bundling/index';
 
 export type DrawGraphParams = {
 	ctx: CanvasRenderingContext2D;
@@ -8,6 +9,10 @@ export type DrawGraphParams = {
 	drawNodes?: boolean;
 	drawEdges?: boolean;
 };
+
+export function clearCanvas(ctx: CanvasRenderingContext2D): void {
+	ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
+}
 
 export function drawGraph({
 	ctx,
@@ -76,28 +81,14 @@ export function drawGraph({
 
 export type DrawGraphAndBundledEdgesParams = {
 	ctx: CanvasRenderingContext2D;
-	graph: Graph;
-	bundeledEdges: { edge: Edge; controlPoints: { x: number; y: number }[] }[];
+	bundeledEdges: BundledEdge[];
 };
 
-export function drawGraphAndBundledEdges({
-	ctx,
-	graph,
-	bundeledEdges,
-}: DrawGraphAndBundledEdgesParams): void {
+export function drawBundledEdges({ ctx, bundeledEdges }: DrawGraphAndBundledEdgesParams): void {
 	console.time('Draw');
-	drawGraph({ ctx, graph, drawLabels: false, drawNodes: false, drawEdges: false });
 
-	bundeledEdges.forEach(({ edge, controlPoints }, i) => {
-		const start = graph.nodes.get(edge.start);
-		const end = graph.nodes.get(edge.end);
-
-		if (!start || !end) {
-			console.warn('Edge has no start or end node', edge);
-			return;
-		}
-
-		drawBezierCurve(ctx, start.x, start.y, end.x, end.y, controlPoints, {
+	bundeledEdges.forEach(({ controlPoints }) => {
+		drawBezierCurve(ctx, controlPoints, {
 			width: 1,
 			color: 'color(srgb 1 0 0 / 0.2)',
 		});

@@ -7,7 +7,8 @@
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { GreedySpanner } from '@bachelor/core/spanner/gpu';
+	import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
+	import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 	import { onMount } from 'svelte';
 	import { drawGraph } from '$lib/_canvas';
 
@@ -19,7 +20,8 @@
 		goto(`?graph=${selectedGraph}`);
 	});
 
-	let spanner: GreedySpanner;
+	let greedy: GreedySpanner;
+	let theta: ThetaSpanner;
 	let maxDistortion = $state<number>(2);
 
 	canvas.onResize = () => runGPU();
@@ -27,17 +29,22 @@
 	onMount(async () => {
 		const graph = await loadGraph(selectedGraph);
 
-		spanner = new GreedySpanner({ graph, device });
+		greedy = new GreedySpanner({ graph, device, maxDistortion: 2 });
+		theta = new ThetaSpanner({ graph, device, k: 1000 });
 
 		runGPU();
 	});
 
 	async function runGPU() {
-		if (!spanner) return;
+		if (!greedy || !theta) return;
 
-		console.time('Spanner');
-		const graph = await spanner.compute();
-		console.timeEnd('Spanner');
+		console.time('greedy');
+		const greedySpanner = await greedy.compute();
+		console.timeEnd('greedy');
+
+		console.time('theta');
+		const thetaSpanner = await theta.compute();
+		console.timeEnd('theta');
 
 		const graphControl = await loadGraph(selectedGraph);
 		const spannerControl = await loadSpanner(selectedGraph);
@@ -50,7 +57,8 @@
 		// const isSame = JSON.stringify(spannerControl.toJSON()) === JSON.stringify(lol.toJSON());
 		// console.log({ isSame });
 
-		drawGraph({ ctx: context, graph: spannerControl, drawLabels: false });
+		console.log(thetaSpanner);
+		drawGraph({ ctx: context, graph: thetaSpanner, drawLabels: false });
 	}
 </script>
 

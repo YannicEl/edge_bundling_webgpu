@@ -40,6 +40,16 @@ export class Graph {
 		this.edges.set(key, edge);
 	}
 
+	removeEdge(edge: Edge) {
+		if (!this.adjacencyList.has(edge.start)) throw new Error('Start node not found');
+		this.adjacencyList.get(edge.start)!.delete(edge.end);
+
+		if (!this.adjacencyList.has(edge.end)) throw new Error('End node not found');
+		this.adjacencyList.get(edge.end)!.delete(edge.start);
+
+		this.edges.delete(`${edge.start}_${edge.end}`);
+	}
+
 	static fromJSON({ nodes, edges }: GraphJSON): Graph {
 		const graph = new Graph();
 

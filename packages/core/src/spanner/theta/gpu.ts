@@ -1,17 +1,20 @@
-import { Graph } from '../AdjacencyList';
-import { BufferData } from '../BufferData';
-import { createGPUBuffer } from '../GPUBuffer';
+import { Spanner } from '../index';
+import { Graph } from '../../AdjacencyList';
+import { BufferData } from '../../BufferData';
+import { createGPUBuffer } from '../../GPUBuffer';
 import shader from './shader.wgsl?raw';
 
-export type GreedySpannerParams = {
+export type ThetaSpannerParams = {
 	device: GPUDevice;
 	graph: Graph;
 	k?: number;
 };
 
-export class GreedySpanner {
-	graph: Graph;
+export class ThetaSpanner extends Spanner {
 	#device: GPUDevice;
+
+	#graph: Graph;
+	#spanner: Graph;
 
 	#positionsBuffer: GPUBuffer;
 	#edgesBuffer: GPUBuffer;
@@ -22,30 +25,23 @@ export class GreedySpanner {
 	#pipeline: GPUComputePipeline;
 	#bindGroup: GPUBindGroup;
 
-	constructor({ device, graph, k = 100 }: GreedySpannerParams) {
-		this.graph = graph;
+	constructor({ device, graph, k = 16 }: ThetaSpannerParams) {
+		super();
+
 		this.#device = device;
 
-		const theta = (2 * Math.PI) / k;
-		console.log('theta:', theta);
-
-		console.log('cos(theta / 2):', Math.cos(theta / 2));
-		console.log('sin(theta / 2):', Math.sin(theta / 2));
-
-		console.log('cos(theta / 2) - sin(theta / 2):', Math.cos(theta / 2) - Math.sin(theta / 2));
-
-		const t = 1 / (Math.cos(theta / 2) - Math.sin(theta / 2));
-		console.log('t:', t);
+		this.#graph = graph;
+		this.#spanner = new Graph();
 
 		const positionsBufferData = new BufferData(
 			{
 				x: 'float',
 				y: 'float',
 			},
-			this.graph.nodes.size
+			this.#graph.nodes.size
 		);
 
-		graph.nodes.forEach((node, index) => {
+		this.#graph.nodes.forEach((node, index) => {
 			positionsBufferData.set(
 				{
 					x: node.x,
@@ -62,7 +58,8 @@ export class GreedySpanner {
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
 		});
 
-		const maxEdges = (k * graph.nodes.size) / 2;
+		const maxEdges = (k * this.#graph.nodes.size) / 2;
+		console.log('maxEdges:', maxEdges);
 
 		const edgesBufferData = new BufferData(
 			{
@@ -96,7 +93,7 @@ export class GreedySpanner {
 		});
 		uniformsBufferData.set({
 			k: k,
-			node_count: this.graph.nodes.size,
+			node_count: this.#graph.nodes.size,
 		});
 
 		this.#uniformsBuffer = createGPUBuffer({
@@ -144,7 +141,7 @@ export class GreedySpanner {
 
 		pass.setPipeline(this.#pipeline!);
 		pass.setBindGroup(0, this.#bindGroup);
-		pass.dispatchWorkgroups(Math.ceil(this.graph.nodes.size / 64));
+		pass.dispatchWorkgroups(Math.ceil(this.#graph.nodes.size / 64));
 		pass.end();
 
 		encoder.copyBufferToBuffer(
@@ -170,20 +167,23 @@ export class GreedySpanner {
 		console.log({ edges });
 
 		const spanner = new Graph();
-		this.graph.nodes.forEach((node, index) => {
+		this.#graph.nodes.forEach((node) => {
 			spanner.addNode(node);
 		});
 
 		for (let i = 0; i < counter!; i++) {
 			const start = edges[i * 2];
 			const end = edges[i * 2 + 1];
+
+			// console.log(i * 2, i * 2 + 1);
+
 			if (start === undefined || end === undefined) {
 				console.warn('start is undefined. continuing...');
 				continue;
 			}
 
-			const startNode = this.graph.nodes.get(start);
-			const endNode = this.graph.nodes.get(end);
+			const startNode = this.#graph.nodes.get(start);
+			const endNode = this.#graph.nodes.get(end);
 
 			if (startNode === undefined || endNode === undefined) {
 				console.warn('start or end node is undefined. continuing...');
@@ -197,6 +197,17 @@ export class GreedySpanner {
 			spanner.addEdge({ start, end, weight });
 		}
 
+		spanner.edges.forEach((edge) => {
+			if (!this.#graph.edges.has(`${edge.start}_${edge.end}`)) {
+				spanner.removeEdge(edge);
+			}
+		});
+
+		this.#spanner = spanner;
 		return spanner;
+	}
+
+	get graph(): Graph {
+		return this.#spanner;
 	}
 }

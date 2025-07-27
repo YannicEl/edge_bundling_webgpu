@@ -30,45 +30,43 @@ export function drawCircle(
 
 export function drawBezierCurve(
 	ctx: CanvasRenderingContext2D,
-	x1: number,
-	y1: number,
-	x2: number,
-	y2: number,
 	controlPoints: Point[],
 	{ width, color }: { width: number; color?: string }
 ): void {
+	if (controlPoints.length < 2) {
+		console.warn('Not enough control points');
+		return;
+	}
+
 	ctx.lineWidth = width;
 	if (color) ctx.strokeStyle = color;
 
+	const start = controlPoints.at(0)!;
+	const end = controlPoints.at(-1)!;
+
 	ctx.beginPath();
-	ctx.moveTo(x1, y1);
+	ctx.moveTo(start.x, start.y);
 
-	if (controlPoints.length === 1) {
-		const point = controlPoints[0]!;
-		ctx.quadraticCurveTo(point.x, point.y, x2, y2);
-	} else if (controlPoints.length === 2) {
-		const point1 = controlPoints[0]!;
-		const point2 = controlPoints[1]!;
-		ctx.bezierCurveTo(point1.x, point1.y, point2.x, point2.y, x2, y2);
+	if (controlPoints.length === 3) {
+		const point = controlPoints[1]!;
+		ctx.quadraticCurveTo(point.x, point.y, end.x, end.y);
+	} else if (controlPoints.length === 4) {
+		const point1 = controlPoints[1]!;
+		const point2 = controlPoints[2]!;
+		ctx.bezierCurveTo(point1.x, point1.y, point2.x, point2.y, end.x, end.y);
 	} else {
-		ctx.moveTo(x1, y1);
-		const start = { x: x1, y: y1 };
-		const end = { x: x2, y: y2 };
-		const points: Point[] = [start, ...controlPoints, end];
-		ctx.beginPath();
+		for (let i = 1; i < controlPoints.length - 2; i++) {
+			const point1 = controlPoints[i]!;
+			const point2 = controlPoints[i + 1]!;
 
-		ctx.moveTo(start.x, start.y);
-		for (let i = 1; i < points.length - 2; i++) {
-			const xc = (points[i].x + points[i + 1].x) / 2;
-			const yc = (points[i].y + points[i + 1].y) / 2;
-			ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+			const xc = (point1.x + point2.x) / 2;
+			const yc = (point1.y + point2.y) / 2;
+			ctx.quadraticCurveTo(point1.x, point1.y, xc, yc);
 		}
-		ctx.quadraticCurveTo(
-			points[points.length - 2].x,
-			points[points.length - 2].y,
-			points[points.length - 1].x,
-			points[points.length - 1].y
-		);
+
+		const point1 = controlPoints.at(-2)!;
+		const point2 = controlPoints.at(-1)!;
+		ctx.quadraticCurveTo(point1.x, point1.y, point2.x, point2.y);
 	}
 
 	ctx.stroke();

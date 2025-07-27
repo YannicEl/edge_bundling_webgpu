@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { drawGraphAndBundledEdges } from '$lib/_canvas';
+	import { clearCanvas, drawBundledEdges } from '$lib/_canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
@@ -9,6 +9,7 @@
 	import { goto } from '$app/navigation';
 	import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
 	import { onMount } from 'svelte';
+	import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -29,19 +30,28 @@
 	// 	runGPU();
 	// });
 
-	$effect(() => {
-		console.log({ edgeWeightFactor });
-		if (!epb) return;
-		epb.setEdgeWeightFactor(edgeWeightFactor).then(() => runGPU());
-	});
+	// $effect(() => {
+	// 	console.log({ edgeWeightFactor });
+	// 	if (!epb) return;
+	// 	epb.setEdgeWeightFactor(edgeWeightFactor).then(() => runGPU());
+	// });
 
 	onMount(async () => {
 		const graph = await loadGraph(selectedGraph);
 		const spanner = await loadSpanner(selectedGraph);
 
+		// console.time('greedy');
+		// const greedySpanner = new GreedySpanner({ graph, device, maxDistortion });
+		// const greedySpannerGraph = await greedySpanner.compute();
+		// console.timeEnd('greedy');
+
+		console.time('theta');
+		const thetaSpanner = new ThetaSpanner({ graph, device, k: 100 });
+		const thetaSpannerGraph = await thetaSpanner.compute();
+		console.timeEnd('theta');
+
 		epb = new EdgePathBundlingGPUFloydWarshall({
 			graph,
-			spanner,
 			maxDistortion,
 			edgeWeightFactor,
 			device,
@@ -54,10 +64,11 @@
 		if (!epb) return;
 
 		console.time('EPB');
-		const { bundeledEdges, spanner } = await epb.bundle();
+		const bundeledEdges = await epb.bundle();
 		console.timeEnd('EPB');
 
-		drawGraphAndBundledEdges({ ctx: context, graph: spanner, bundeledEdges });
+		clearCanvas(context);
+		drawBundledEdges({ ctx: context, bundeledEdges });
 	}
 </script>
 

@@ -1,65 +1,78 @@
+import type { EdgePathBundling } from '..';
 import type { Edge } from '../../AdjacencyList';
-import type { Graph } from '../../AdjacencyList';
+import { Graph } from '../../AdjacencyList';
 import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
-import { greedySpanner } from '../../spanner/greedy';
+import type { Spanner } from '../../spanner';
+import { GreedySpanner } from '../../spanner/greedy/gpu';
+import { ThetaSpanner } from '../../spanner/theta/gpu';
 
 export type EdgePathBundlingGPUFloydWarshallParams = {
 	graph: Graph;
-	spanner: Graph;
 	maxDistortion?: number;
 	edgeWeightFactor?: number;
 	device: GPUDevice;
 };
 
-export class EdgePathBundlingGPUFloydWarshall {
-	#graph: Graph;
+export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 	#device: GPUDevice;
-	#spanner: Graph;
-	#maxDistortion: number;
-	#floydWarshall: FloydWarshall;
+	#graph: Graph;
 
-	initialized = false;
+	#maxDistortion: number;
+	#edgeWeightFactor: number;
+
+	#spanner?: Spanner;
+	#floydWarshall?: FloydWarshall;
 
 	constructor({
+		device,
 		graph,
-		spanner,
 		maxDistortion = 2,
 		edgeWeightFactor = 1,
-		device,
 	}: EdgePathBundlingGPUFloydWarshallParams) {
-		// if (!spanner) {
-		// 	this.#spanner = greedySpanner(graph, maxDistortion);
-		// }
-		this.#graph = graph;
 		this.#device = device;
-		this.#spanner = spanner;
+
+		this.#graph = graph;
+
 		this.#maxDistortion = maxDistortion;
-
-		this.#floydWarshall = new FloydWarshall({
-			graph: spanner,
-			device,
-			edgeWeightFactor,
-		});
-	}
-
-	async init() {
-		if (this.initialized) return;
-		await this.#floydWarshall.init();
-		await this.#floydWarshall.compute();
-		this.initialized = true;
+		this.#edgeWeightFactor = edgeWeightFactor;
 	}
 
 	async bundle() {
-		if (!this.initialized) await this.init();
+		if (!this.#spanner) {
+			this.#spanner = new GreedySpanner({
+				graph: this.#graph,
+				device: this.#device,
+				maxDistortion: this.#maxDistortion,
+			});
+
+			// this.#spanner = new ThetaSpanner({
+			// 	graph: this.#graph,
+			// 	device: this.#device,
+			// 	k: 100,
+			// });
+
+			await this.#spanner.compute();
+		}
+
+		if (!this.#floydWarshall) {
+			this.#floydWarshall = new FloydWarshall({
+				graph: this.#spanner.graph,
+				device: this.#device,
+				edgeWeightFactor: this.#edgeWeightFactor,
+			});
+
+			await this.#floydWarshall.compute();
+		}
 
 		const difference: Edge[] = [];
 		this.#graph.edges.forEach((edge, key) => {
-			if (!this.#spanner.edges.has(key)) {
+			if (!this.#spanner!.graph.edges.has(key)) {
 				difference.push(edge);
 			}
 		});
 
 		const shortestPaths = await this.#floydWarshall.shortestPaths(difference);
+		console.log(shortestPaths.at(0)?.nodes.at(0), shortestPaths.at(0)?.nodes.at(-1));
 
 		const bundeledEdges: {
 			edge: Edge;
@@ -78,7 +91,7 @@ export class EdgePathBundlingGPUFloydWarshall {
 			if (shortestPath.length <= this.#maxDistortion * edge.weight) {
 				bundeledEdges.push({
 					edge,
-					controlPoints: shortestPath.nodes.slice(1, -1).map((nodeIndex) => {
+					controlPoints: shortestPath.nodes.map((nodeIndex) => {
 						const node = this.#graph.nodes.get(nodeIndex);
 						if (!node) throw new Error('Node not found');
 						return { x: node.x, y: node.y };
@@ -89,13 +102,6 @@ export class EdgePathBundlingGPUFloydWarshall {
 			i++;
 		}
 
-		return { bundeledEdges, spanner: this.#spanner };
-	}
-
-	async setEdgeWeightFactor(value: number) {
-		this.#floydWarshall.edgeWeightFactor = value;
-		console.time('compute');
-		await this.#floydWarshall.compute();
-		console.timeEnd('compute');
+		return bundeledEdges;
 	}
 }
