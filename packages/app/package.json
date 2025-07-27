@@ -15,12 +15,12 @@
 	"devDependencies": {
 		"@iconify-json/mdi": "1.2.3",
 		"@sveltejs/adapter-cloudflare": "7.1.1",
-		"@sveltejs/kit": "2.26.0",
+		"@sveltejs/kit": "2.26.1",
 		"@sveltejs/vite-plugin-svelte": "6.1.0",
 		"@types/node": "24.1.0",
 		"@webgpu/types": "0.1.64",
 		"postcss-nesting": "13.0.2",
-		"svelte": "5.36.16",
+		"svelte": "5.37.0",
 		"svelte-check": "4.3.0",
 		"typescript": "5.8.3",
 		"unocss": "66.3.3",
@@ -30,6 +30,6 @@
 	},
 	"dependencies": {
 		"@bachelor/core": "workspace:",
-		"bits-ui": "2.8.12"
+		"bits-ui": "2.8.13"
 	}
 }
