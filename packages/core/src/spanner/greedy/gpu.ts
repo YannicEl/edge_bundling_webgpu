@@ -254,8 +254,8 @@ export class GreedySpanner implements Spanner {
 		// console.log({ newSkipped });
 		// console.log({ copyTime, readTime });
 
-		console.log({ skipped });
-		console.log({ skippedPercentage: (skipped / sortedEdges.length) * 100 });
+		// console.log({ skipped });
+		// console.log({ skippedPercentage: (skipped / sortedEdges.length) * 100 });
 
 		return this.#spanner;
 	}

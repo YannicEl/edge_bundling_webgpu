@@ -59,7 +59,7 @@ export class ThetaSpanner extends Spanner {
 		});
 
 		const maxEdges = (k * this.#graph.nodes.size) / 2;
-		console.log('maxEdges:', maxEdges);
+		// console.log('maxEdges:', maxEdges);
 
 		const edgesBufferData = new BufferData(
 			{
@@ -162,9 +162,6 @@ export class ThetaSpanner extends Spanner {
 
 		await edgesReadBuffer.mapAsync(GPUMapMode.READ);
 		const edges = new Uint32Array(await edgesReadBuffer.getMappedRange());
-
-		console.log({ counter });
-		console.log({ edges });
 
 		const spanner = new Graph();
 		this.#graph.nodes.forEach((node) => {

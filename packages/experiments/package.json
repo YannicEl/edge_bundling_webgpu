@@ -1,0 +1,21 @@
+{
+	"name": "@bachelor/experiments",
+	"private": true,
+	"type": "module",
+	"main": "src/index.js",
+	"sideEffects": false,
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepare": "playwright install --with-deps chromium"
+	},
+	"devDependencies": {
+		"@total-typescript/tsconfig": "1.0.4",
+		"@vitest/browser": "3.2.4",
+		"playwright": "1.54.1",
+		"vitest": "3.2.4"
+	},
+	"dependencies": {
+		"@bachelor/core": "workspace:"
+	}
+}

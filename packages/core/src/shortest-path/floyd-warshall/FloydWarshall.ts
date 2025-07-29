@@ -88,8 +88,6 @@ export class FloydWarshall {
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
 		});
 
-		console.log(this.#distanceMatrixBuffer.size);
-
 		this.#device.queue.writeBuffer(this.#distanceMatrixBuffer, 0, this.distanceMatrix.buffer);
 
 		this.#distanceMatrixReadBuffer = this.#device.createBuffer({

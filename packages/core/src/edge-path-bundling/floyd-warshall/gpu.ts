@@ -39,17 +39,17 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 
 	async bundle() {
 		if (!this.#spanner) {
-			this.#spanner = new GreedySpanner({
-				graph: this.#graph,
-				device: this.#device,
-				maxDistortion: this.#maxDistortion,
-			});
-
-			// this.#spanner = new ThetaSpanner({
+			// this.#spanner = new GreedySpanner({
 			// 	graph: this.#graph,
 			// 	device: this.#device,
-			// 	k: 100,
+			// 	maxDistortion: this.#maxDistortion,
 			// });
+
+			this.#spanner = new ThetaSpanner({
+				graph: this.#graph,
+				device: this.#device,
+				k: 100,
+			});
 
 			await this.#spanner.compute();
 		}
@@ -72,7 +72,6 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 		});
 
 		const shortestPaths = await this.#floydWarshall.shortestPaths(difference);
-		console.log(shortestPaths.at(0)?.nodes.at(0), shortestPaths.at(0)?.nodes.at(-1));
 
 		const bundeledEdges: {
 			edge: Edge;
@@ -92,7 +91,7 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 				bundeledEdges.push({
 					edge,
 					controlPoints: shortestPath.nodes.map((nodeIndex) => {
-						const node = this.#graph.nodes.get(nodeIndex);
+						const node = this.#graph.nodes.get(nodeIndex as number);
 						if (!node) throw new Error('Node not found');
 						return { x: node.x, y: node.y };
 					}),
