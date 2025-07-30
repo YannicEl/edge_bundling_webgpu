@@ -128,7 +128,6 @@ describe('Shortest Path', () => {
 			}));
 
 			const floydWarshall = new FloydWarshall({ graph, device });
-			await floydWarshall.init();
 			await floydWarshall.compute();
 
 			const shortestPaths = await floydWarshall.shortestPaths(paths);
