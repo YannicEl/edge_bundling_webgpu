@@ -1,10 +1,10 @@
+import type { Edge, Graph } from '../../AdjacencyList';
 import { AdjacencyMatrix } from '../../AdjacencyMatrix';
 import { BufferData } from '../../BufferData';
-import type { Edge, Graph } from '../../AdjacencyList';
+import { createGPUBuffer, writeGPUBuffer } from '../../GPUBuffer';
 import type { Path } from '../../path';
 import { mapAndReadBuffer } from '../../utils';
 import shader from './shader.wgsl?raw';
-import { createGPUBuffer, writeGPUBuffer } from '../../GPUBuffer';
 
 export type FloydWarshallParams = {
 	graph: Graph;

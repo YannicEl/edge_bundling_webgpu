@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { Graph } from '../src/Graph.js';
 import { Graph as GraphNew } from '../src/AdjacencyList.js';
+import { Graph } from '../src/Graph.js';
 import { dijkstra } from '../src/shortest-path/dijkstra/cpu.js';
 import { dijkstraGPU } from '../src/shortest-path/dijkstra/gpu.js';
 import { FloydWarshall } from '../src/shortest-path/floyd-warshall/FloydWarshall.js';

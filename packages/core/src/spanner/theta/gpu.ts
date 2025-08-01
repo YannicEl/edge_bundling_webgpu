@@ -1,7 +1,7 @@
-import { Spanner } from '../index';
 import { Graph } from '../../AdjacencyList';
 import { BufferData } from '../../BufferData';
 import { createGPUBuffer } from '../../GPUBuffer';
+import { Spanner } from '../index';
 import shader from './shader.wgsl?raw';
 
 export type ThetaSpannerParams = {

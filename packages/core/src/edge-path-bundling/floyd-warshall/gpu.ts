@@ -3,7 +3,6 @@ import type { Edge } from '../../AdjacencyList';
 import { Graph } from '../../AdjacencyList';
 import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
 import type { Spanner } from '../../spanner';
-import { GreedySpanner } from '../../spanner/greedy/gpu';
 import { ThetaSpanner } from '../../spanner/theta/gpu';
 
 export type EdgePathBundlingGPUFloydWarshallParams = {
@@ -64,6 +63,12 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 			await this.#floydWarshall.compute();
 		}
 
+    if (this.#edgeWeightFactor !== this.#floydWarshall.edgeWeightFactor) {
+      console.log('Edge weight factor changed. Recomputing Floyd-Warshall');
+      this.#floydWarshall.edgeWeightFactor = this.#edgeWeightFactor;
+      await this.#floydWarshall.compute();
+    }
+
 		const difference: Edge[] = [];
 		this.#graph.edges.forEach((edge, key) => {
 			if (!this.#spanner!.graph.edges.has(key)) {
@@ -103,4 +108,12 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 
 		return bundeledEdges;
 	}
+
+  set maxDistortion(maxDistortion: number) {
+    this.#maxDistortion = maxDistortion;
+  }
+
+   set edgeWeightFactor(edgeWeightFactor: number) {
+    this.#edgeWeightFactor = edgeWeightFactor;
+  }
 }

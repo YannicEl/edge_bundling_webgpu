@@ -1,19 +1,10 @@
-import { afterAll, describe, test } from 'vitest';
-import { Graph } from '@bachelor/core/AdjacencyList';
-import { loadGraph } from '@bachelor/core/datasets/load';
-import type { DatasetName } from '@bachelor/core/datasets/load';
-import { initWebGPU } from '@bachelor/core/webGpu';
 import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
-import { server } from '@vitest/browser/context';
+import { initWebGPU } from '@bachelor/core/webGpu';
+import { afterAll, describe, test } from 'vitest';
+import type { CSV, CSVRow } from './utils';
+import { average, ITERATIONS, loadDatasets, writeResult } from './utils';
 
-const ITERATIONS = 5;
-
-const datasets: [dataset: DatasetName, graph: Graph, times: number[]][] = await Promise.all(
-	(['airlines', 'migration', 'airtraffic'] satisfies DatasetName[]).map(async (dataset) => {
-		const graph = await loadGraph(dataset);
-		return [dataset, graph, []];
-	})
-);
+const datasets = await loadDatasets();
 
 describe('Runtime', () => {
 	test.each(datasets)('%s', { repeats: ITERATIONS - 1 }, async (dataset, graph, times) => {
@@ -34,12 +25,10 @@ describe('Runtime', () => {
 	});
 });
 
-type CSVRowValue = string | number;
-
 afterAll(async () => {
-	const csv: CSVRowValue[][] = [];
+	const csv: CSV = [];
 
-	const header: CSVRowValue[] = ['dataset'];
+	const header: CSVRow = ['dataset'];
 	for (let i = 0; i < ITERATIONS; i++) {
 		header.push(`run_${i + 1}`);
 	}
@@ -49,16 +38,15 @@ afterAll(async () => {
 	csv.push(header);
 
 	datasets.forEach(([dataset, graph, times]) => {
-		const row: CSVRowValue[] = [dataset];
+		const row: CSVRow = [dataset];
 
 		times.forEach((time) => {
 			row.push(time);
 		});
 
-		row.push(times.reduce((acc, time) => acc + time, 0) / times.length);
+		row.push(average(times));
 
 		csv.push(row);
 	});
-
-	await server.commands.writeFile('./result.csv', csv.map((row) => row.join(',')).join('\n'));
+	await writeResult('runtime', csv);
 });
