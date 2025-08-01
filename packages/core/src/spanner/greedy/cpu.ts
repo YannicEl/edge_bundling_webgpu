@@ -1,6 +1,6 @@
-import { Edge } from '../Edge';
-import { Graph } from '../Graph';
-import { dijkstra } from '../shortest-path/dijkstra/cpu';
+import { Edge } from '../../Edge';
+import { Graph } from '../../Graph';
+import { dijkstra } from '../../shortest-path/dijkstra/cpu';
 
 export function greedySpanner(graph: Graph, stretchFactor = 2): Graph {
 	console.time('Greedy Spanner');

@@ -1,7 +1,7 @@
 import type { Edge } from '../../Edge';
 import type { Graph } from '../../Graph';
 import { dijkstraGPU } from '../../shortest-path/dijkstra/gpu';
-import { greedySpanner } from '../../spanner/greedy';
+import { greedySpanner } from '../../spanner/greedy/cpu';
 
 export type EdgePathBundlinGPUgParams = {
 	device: GPUDevice;

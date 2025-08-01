@@ -1,7 +1,7 @@
 import type { Edge } from '../../Edge';
 import type { Graph } from '../../Graph';
 import { dijkstra } from '../../shortest-path/dijkstra/cpu';
-import { greedySpanner } from '../../spanner/greedy';
+import { greedySpanner } from '../../spanner/greedy/cpu';
 
 export type EdgePathBundlingParams = {
 	spanner?: Graph;
