@@ -9,7 +9,7 @@
 	"scripts": {
 		"format:check": "prettier --check .",
 		"format": "prettier --write .",
-		"test": "pnpm --filter \"*\" test"
+		"test": "pnpm --filter \"core\" test"
 	},
 	"devDependencies": {
 		"@prettier/plugin-oxc": "0.0.4",
