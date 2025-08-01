@@ -1,4 +1,4 @@
-import type { Edge, Graph } from '@bachelor/core/AdjacencyList';
+import type { Graph } from '@bachelor/core/AdjacencyList';
 import { drawBezierCurve, drawCircle, drawLine } from '@bachelor/core/canvas';
 import type { BundledEdge } from '@bachelor/core/edge-path-bundling/index';
 

@@ -63,11 +63,11 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 			await this.#floydWarshall.compute();
 		}
 
-    if (this.#edgeWeightFactor !== this.#floydWarshall.edgeWeightFactor) {
-      console.log('Edge weight factor changed. Recomputing Floyd-Warshall');
-      this.#floydWarshall.edgeWeightFactor = this.#edgeWeightFactor;
-      await this.#floydWarshall.compute();
-    }
+		if (this.#edgeWeightFactor !== this.#floydWarshall.edgeWeightFactor) {
+			console.log('Edge weight factor changed. Recomputing Floyd-Warshall');
+			this.#floydWarshall.edgeWeightFactor = this.#edgeWeightFactor;
+			await this.#floydWarshall.compute();
+		}
 
 		const difference: Edge[] = [];
 		this.#graph.edges.forEach((edge, key) => {
@@ -109,11 +109,11 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 		return bundeledEdges;
 	}
 
-  set maxDistortion(maxDistortion: number) {
-    this.#maxDistortion = maxDistortion;
-  }
+	set maxDistortion(maxDistortion: number) {
+		this.#maxDistortion = maxDistortion;
+	}
 
-   set edgeWeightFactor(edgeWeightFactor: number) {
-    this.#edgeWeightFactor = edgeWeightFactor;
-  }
+	set edgeWeightFactor(edgeWeightFactor: number) {
+		this.#edgeWeightFactor = edgeWeightFactor;
+	}
 }
