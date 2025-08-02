@@ -67,8 +67,10 @@
 		const bundeledEdges = await epb.bundle();
 		console.timeEnd('EPB');
 
+		console.time('Draw');
 		clearCanvas(context);
 		drawBundledEdges({ ctx: context, bundeledEdges });
+		console.timeEnd('Draw');
 	}
 </script>
 

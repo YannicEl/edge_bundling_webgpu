@@ -40,9 +40,9 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 			await this.#spanner.compute();
 		}
 
-		if (this.#edgeWeightFactor !== this.#spanner.maxDistortion) {
+		if (this.#maxDistortion !== this.#spanner.maxDistortion) {
 			console.log('Max distortion changed. Recomputing Spanner');
-			this.#spanner.maxDistortion = this.#edgeWeightFactor;
+			this.#spanner.maxDistortion = this.#maxDistortion;
 			await this.#spanner.compute();
 		}
 
@@ -72,8 +72,6 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 				difference.push(edge);
 			}
 		});
-
-		console.log('difference', difference.length);
 
 		const shortestPaths = await this.#floydWarshall.shortestPaths(difference);
 

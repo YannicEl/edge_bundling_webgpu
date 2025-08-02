@@ -85,13 +85,10 @@ export type DrawGraphAndBundledEdgesParams = {
 };
 
 export function drawBundledEdges({ ctx, bundeledEdges }: DrawGraphAndBundledEdgesParams): void {
-	console.time('Draw');
-
 	bundeledEdges.forEach(({ controlPoints }) => {
 		drawBezierCurve(ctx, controlPoints, {
 			width: 1,
 			color: 'color(srgb 1 0 0 / 0.2)',
 		});
 	});
-	console.timeEnd('Draw');
 }

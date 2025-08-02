@@ -41,8 +41,6 @@ export class ThetaSpanner extends Spanner {
 		this.#k = this.#maxDistortion;
 		// this.#k = this.#maxDistortion * 50;
 
-		console.log({ k: this.#k });
-
 		const positionsBufferData = new BufferData({ x: 'float', y: 'float' }, this.#graph.nodes.size);
 
 		this.#graph.nodes.forEach(({ x, y }, index) => {

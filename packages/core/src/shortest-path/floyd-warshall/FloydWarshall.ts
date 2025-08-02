@@ -198,8 +198,6 @@ export class FloydWarshall {
 	}
 
 	async shortestPaths(paths: { start: number; end: number }[]): Promise<(Path | null)[]> {
-		console.time('Shortest Paths Buffer Data');
-
 		let pathsBuffer = this.#pathsBufferCache.get(paths.length);
 
 		const pathsBufferData = new BufferData(
@@ -231,10 +229,6 @@ export class FloydWarshall {
 				data: pathsBufferData,
 			});
 		}
-
-		console.timeEnd('Shortest Paths Buffer Data');
-
-		console.time('Shortest Paths Buffer Compute');
 
 		const shortestPathsDistancesBuffer = this.#device.createBuffer({
 			size: paths.length * 4,
@@ -315,9 +309,7 @@ export class FloydWarshall {
 			shortestPathsNodesReadBuffer,
 			Uint32Array
 		);
-		console.timeEnd('Shortest Paths Buffer Compute');
 
-		console.time('Shortest Paths Buffer Map');
 		const ret: (Path | null)[] = [];
 
 		for (let i = 0; i < paths.length; i++) {
@@ -337,7 +329,6 @@ export class FloydWarshall {
 				nodes,
 			});
 		}
-		console.timeEnd('Shortest Paths Buffer Map');
 
 		return ret;
 	}
