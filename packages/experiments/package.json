@@ -5,8 +5,9 @@
 	"main": "src/index.js",
 	"sideEffects": false,
 	"scripts": {
-		"test": "vitest run",
-		"test:watch": "vitest",
+		"run": "vitest run",
+		"run:interactivity": "vitest run src/interactivity.spec.ts",
+		"run:runtime": "vitest run src/runtime.spec.ts",
 		"prepare": "playwright install --with-deps chromium"
 	},
 	"devDependencies": {

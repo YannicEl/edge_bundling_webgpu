@@ -2,14 +2,14 @@ import type { Graph } from '@bachelor/core/AdjacencyList';
 import { loadGraph, type DatasetName } from '@bachelor/core/datasets/load';
 import { server } from '@vitest/browser/context';
 
-export const ITERATIONS = 2;
+export const ITERATIONS = 1;
 
 export async function loadDatasets() {
-	const datasets: [dataset: DatasetName, graph: Graph, times: number[]][] = await Promise.all(
+	const datasets: { dataset: DatasetName; graph: Graph }[] = await Promise.all(
 		(['airlines'] satisfies DatasetName[]).map(async (dataset) => {
 			// (['airlines', 'migration', 'airtraffic'] satisfies DatasetName[]).map(async (dataset) => {
 			const graph = await loadGraph(dataset);
-			return [dataset, graph, []];
+			return { dataset, graph };
 		})
 	);
 
@@ -31,6 +31,10 @@ export async function writeResult(name: string, csv: CSV) {
 	);
 }
 
-export function average(values: number[]) {
+export function mean(values: number[]) {
 	return values.reduce((acc, value) => acc + value, 0) / values.length;
+}
+
+export function median(values: number[]) {
+	return values.sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
 }

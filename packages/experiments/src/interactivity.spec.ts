@@ -1,86 +1,155 @@
+import type { DatasetName } from '@bachelor/core/datasets/load';
 import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
 import { initWebGPU } from '@bachelor/core/webGpu';
-import { afterAll, describe, test } from 'vitest';
-import { average, ITERATIONS, loadDatasets, writeResult, type CSV, type CSVRow } from './utils';
+import { afterAll, beforeAll, describe, test } from 'vitest';
+import type { CSV, CSVRow } from './utils';
+import { ITERATIONS, loadDatasets, mean, median, writeResult } from './utils';
 
 const datasets = await loadDatasets();
 
-const steps = [
-	{ parameter: 'edgeWeightFactor', value: 1 },
-	{ parameter: 'maxDistortion', value: 1 },
-	{ parameter: 'edgeWeightFactor', value: 3 },
-	{ parameter: 'maxDistortion', value: 3 },
+const experiments = [
+	{
+		name: 'edge_weight_factor',
+		steps: [
+			[{ parameter: 'edgeWeightFactor', value: 1 }],
+			[{ parameter: 'edgeWeightFactor', value: 2 }],
+			[{ parameter: 'edgeWeightFactor', value: 3 }],
+		],
+	},
+	{
+		name: 'max_distortion',
+		steps: [
+			[{ parameter: 'maxDistortion', value: 1 }],
+			[{ parameter: 'maxDistortion', value: 2 }],
+			[{ parameter: 'maxDistortion', value: 3 }],
+		],
+	},
+	{
+		name: 'edge_weight_factor_and_max_distortion',
+		steps: [
+			[
+				{ parameter: 'maxDistortion', value: 1 },
+				{ parameter: 'edgeWeightFactor', value: 1 },
+			],
+			[
+				{ parameter: 'maxDistortion', value: 2 },
+				{ parameter: 'edgeWeightFactor', value: 2 },
+			],
+			[
+				{ parameter: 'maxDistortion', value: 3 },
+				{ parameter: 'edgeWeightFactor', value: 3 },
+			],
+		],
+	},
 ] as const;
 
-describe('Interactivity', () => {
-	test.sequential.each(datasets)('%s', { repeats: ITERATIONS - 1 }, async (dataset, graph, times) => {
-		const { device } = await initWebGPU();
+type ExperimentName = (typeof experiments)[number]['name'];
 
-		const epb = new EdgePathBundlingGPUFloydWarshall({
-			device,
-			graph,
-			maxDistortion: 2,
-			edgeWeightFactor: 2,
+const results = {} as Record<ExperimentName, Record<DatasetName, number[]>>;
+
+beforeAll(() => {
+	experiments.forEach(({ name }) => {
+		results[name] = {} as Record<DatasetName, number[]>;
+
+		datasets.forEach(({ dataset }) => {
+			results[name][dataset] = [];
 		});
-
-		const start = performance.now();
-		await epb.bundle();
-		const end = performance.now();
-
-		times.push(end - start);
-
-		for await (const { parameter, value } of steps) {
-			const start = performance.now();
-			epb[parameter] = value;
-			await epb.bundle();
-			const end = performance.now();
-
-			times.push(end - start);
-		}
 	});
 });
 
-afterAll(async () => {
-	const csv: CSV = [];
+describe.sequential.for(experiments)('Interactivity $name', (experiment) => {
+	test.sequential.for(datasets)(
+		'$dataset',
+		{ repeats: ITERATIONS - 1 },
+		async ({ dataset, graph }) => {
+			const { device } = await initWebGPU();
+			const epb = new EdgePathBundlingGPUFloydWarshall({
+				device,
+				graph,
+				maxDistortion: 2,
+				edgeWeightFactor: 2,
+			});
 
-	const header: CSVRow = ['dataset'];
+			const start = performance.now();
+			await epb.bundle();
+			const end = performance.now();
 
-	header.push('average_initial');
-	for (const { parameter, value } of steps) {
-		header.push(`average_${parameter}_${value}`);
-	}
+			results[experiment.name][dataset].push(end - start);
 
-	for (let i = 0; i < ITERATIONS; i++) {
-		header.push(`run_${i + 1}_initial`);
+			for await (const stepValues of experiment.steps) {
+				const start = performance.now();
+				stepValues.forEach(({ parameter, value }) => {
+					epb[parameter] = value;
+				});
 
-		for (const { parameter, value } of steps) {
-			header.push(`run_${i + 1}_${parameter}_${value}`);
-		}
-	}
+				await epb.bundle();
+				const end = performance.now();
 
-	csv.push(header);
-
-	datasets.forEach(([dataset, graph, times]) => {
-		const row: CSVRow = [dataset];
-
-		// Calculate average for each step
-		for (let i = 0; i <= steps.length; i++) {
-			const values: number[] = [];
-
-			for (let j = i; j < times.length; j += steps.length + 1) {
-				console.log({ i, j });
-				values.push(times[j]!);
+				results[experiment.name][dataset].push(end - start);
 			}
+		}
+	);
+});
 
-			row.push(average(values));
+afterAll(async () => {
+	Object.entries(results).forEach(async ([name, values]) => {
+		console.log({ values });
+
+		const csv: CSV = [];
+
+		const header: CSVRow = ['dataset'];
+
+		const steps = experiments.find(({ name: stepName }) => stepName === name)?.steps;
+		if (!steps) {
+			throw new Error(`Step ${name} not found`);
 		}
 
-		times.forEach((time) => {
-			row.push(time);
+		const aggregationTypes = [
+			['mean', mean],
+			['median', median],
+		] as const;
+		aggregationTypes.forEach(([type]) => {
+			header.push(`${type}_initial`);
+
+			for (const step of steps) {
+				header.push(
+					`${type}_${step.map(({ parameter, value }) => `${parameter}_${value}`).join('_')}`
+				);
+			}
 		});
 
-		csv.push(row);
-	});
+		for (let i = 0; i < ITERATIONS; i++) {
+			header.push(`run_${i + 1}_initial`);
 
-	await writeResult('interactivity', csv);
+			for (const step of steps) {
+				header.push(`run_${step.map(({ parameter, value }) => `${parameter}_${value}`).join('_')}`);
+			}
+		}
+
+		csv.push(header);
+
+		Object.entries(values).forEach(([dataset, times]) => {
+			const row: CSVRow = [dataset];
+
+			aggregationTypes.forEach(([_, fn]) => {
+				for (let i = 0; i <= steps.length; i++) {
+					const values: number[] = [];
+
+					for (let j = i; j < times.length; j += steps.length + 1) {
+						values.push(times[j]!);
+					}
+
+					row.push(fn(values));
+				}
+			});
+
+			times.forEach((time) => {
+				row.push(time);
+			});
+
+			csv.push(row);
+		});
+
+		await writeResult(`interactivity_${name}`, csv);
+	});
 });
