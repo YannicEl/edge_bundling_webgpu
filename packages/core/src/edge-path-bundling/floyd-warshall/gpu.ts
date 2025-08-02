@@ -3,7 +3,6 @@ import type { Edge } from '../../AdjacencyList';
 import { Graph } from '../../AdjacencyList';
 import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
 import type { Spanner } from '../../spanner';
-import { GreedySpanner } from '../../spanner/greedy/gpu';
 import { ThetaSpanner } from '../../spanner/theta/gpu';
 
 export type EdgePathBundlingGPUFloydWarshallParams = {
@@ -70,6 +69,8 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 				difference.push(edge);
 			}
 		});
+
+		console.log('difference', difference.length);
 
 		const shortestPaths = await this.#floydWarshall.shortestPaths(difference);
 
