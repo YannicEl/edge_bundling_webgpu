@@ -1,54 +1,52 @@
 import { Graph } from '../../AdjacencyList';
 import { BufferData } from '../../BufferData';
-import { createGPUBuffer } from '../../GPUBuffer';
+import { createGPUBuffer, writeGPUBuffer } from '../../GPUBuffer';
+import type { SpannerParams } from '../index';
 import { Spanner } from '../index';
 import shader from './shader.wgsl?raw';
-
-export type ThetaSpannerParams = {
-	device: GPUDevice;
-	graph: Graph;
-	k?: number;
-};
 
 export class ThetaSpanner extends Spanner {
 	#device: GPUDevice;
 
 	#graph: Graph;
-	#spanner: Graph;
+	#spanner?: Graph;
+
+	#maxDistortion: number;
+	#k: number;
+
+	#uniformsBufferData: BufferData<{ k: 'uint'; theta: 'float'; node_count: 'uint' }>;
+	#uniformsBuffer: GPUBuffer;
 
 	#positionsBuffer: GPUBuffer;
+
 	#edgesBuffer: GPUBuffer;
+	#edgesReadBuffer: GPUBuffer;
+
+	#counterBufferData: BufferData<{ value: 'uint' }>;
 	#counterBuffer: GPUBuffer;
-	#uniformsBuffer: GPUBuffer;
+	#counterReadBuffer: GPUBuffer;
 
 	#shaderModule: GPUShaderModule;
 	#pipeline: GPUComputePipeline;
 	#bindGroup: GPUBindGroup;
 
-	constructor({ device, graph, k = 16 }: ThetaSpannerParams) {
+	constructor({ device, graph, maxDistortion }: SpannerParams) {
 		super();
 
 		this.#device = device;
 
 		this.#graph = graph;
-		this.#spanner = new Graph();
 
-		const positionsBufferData = new BufferData(
-			{
-				x: 'float',
-				y: 'float',
-			},
-			this.#graph.nodes.size
-		);
+		this.#maxDistortion = maxDistortion;
+		this.#k = this.#maxDistortion;
+		// this.#k = this.#maxDistortion * 50;
 
-		this.#graph.nodes.forEach((node, index) => {
-			positionsBufferData.set(
-				{
-					x: node.x,
-					y: node.y,
-				},
-				index
-			);
+		console.log({ k: this.#k });
+
+		const positionsBufferData = new BufferData({ x: 'float', y: 'float' }, this.#graph.nodes.size);
+
+		this.#graph.nodes.forEach(({ x, y }, index) => {
+			positionsBufferData.set({ x, y }, index);
 		});
 
 		this.#positionsBuffer = createGPUBuffer({
@@ -58,48 +56,39 @@ export class ThetaSpanner extends Spanner {
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
 		});
 
-		const maxEdges = (k * this.#graph.nodes.size) / 2;
-		// console.log('maxEdges:', maxEdges);
+		const { edgesBuffer, edgesReadBuffer } = this.updateEdgesBuffer();
+		this.#edgesBuffer = edgesBuffer;
+		this.#edgesReadBuffer = edgesReadBuffer;
 
-		const edgesBufferData = new BufferData(
-			{
-				start: 'uint',
-				end: 'uint',
-			},
-			maxEdges
-		);
-
-		this.#edgesBuffer = createGPUBuffer({
-			label: 'edges buffer',
-			device: this.#device,
-			data: edgesBufferData,
-			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
-		});
-
-		const counterBufferData = new BufferData({
-			value: 'uint',
-		});
-
+		this.#counterBufferData = new BufferData({ value: 'uint' });
 		this.#counterBuffer = createGPUBuffer({
 			label: 'counter buffer',
 			device: this.#device,
-			data: counterBufferData,
+			data: this.#counterBufferData,
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 		});
 
-		const uniformsBufferData = new BufferData({
+		this.#counterReadBuffer = this.#device.createBuffer({
+			size: this.#counterBuffer.size,
+			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+		});
+
+		this.#uniformsBufferData = new BufferData({
 			k: 'uint',
+			theta: 'float',
 			node_count: 'uint',
 		});
-		uniformsBufferData.set({
-			k: k,
+
+		this.#uniformsBufferData.set({
+			k: this.#k,
+			theta: (Math.PI * 2) / this.#k,
 			node_count: this.#graph.nodes.size,
 		});
 
 		this.#uniformsBuffer = createGPUBuffer({
 			label: 'uniforms buffer',
 			device: this.#device,
-			data: uniformsBufferData,
+			data: this.#uniformsBufferData,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 		});
 
@@ -126,20 +115,27 @@ export class ThetaSpanner extends Spanner {
 	}
 
 	async compute() {
-		const counterReadBuffer = this.#device.createBuffer({
-			size: this.#counterBuffer.size,
-			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+		// if (this.#spanner) {
+		// 	return this.#spanner;
+		// }
+
+		writeGPUBuffer({
+			device: this.#device,
+			buffer: this.#uniformsBuffer,
+			data: this.#uniformsBufferData,
 		});
 
-		const edgesReadBuffer = this.#device.createBuffer({
-			size: this.#edgesBuffer.size,
-			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+		this.#counterBufferData.set({ value: 0 });
+		writeGPUBuffer({
+			device: this.#device,
+			buffer: this.#counterBuffer,
+			data: this.#counterBufferData,
 		});
 
 		const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
 		const pass = encoder.beginComputePass({ label: 'compute builtin pass' });
 
-		pass.setPipeline(this.#pipeline!);
+		pass.setPipeline(this.#pipeline);
 		pass.setBindGroup(0, this.#bindGroup);
 		pass.dispatchWorkgroups(Math.ceil(this.#graph.nodes.size / 64));
 		pass.end();
@@ -147,21 +143,27 @@ export class ThetaSpanner extends Spanner {
 		encoder.copyBufferToBuffer(
 			this.#counterBuffer,
 			0,
-			counterReadBuffer,
+			this.#counterReadBuffer,
 			0,
 			this.#counterBuffer.size
 		);
 
-		encoder.copyBufferToBuffer(this.#edgesBuffer, 0, edgesReadBuffer, 0, this.#edgesBuffer.size);
+		encoder.copyBufferToBuffer(
+			this.#edgesBuffer,
+			0,
+			this.#edgesReadBuffer,
+			0,
+			this.#edgesBuffer.size
+		);
 
 		const commandBuffer = encoder.finish();
 		this.#device.queue.submit([commandBuffer]);
 
-		await counterReadBuffer.mapAsync(GPUMapMode.READ);
-		const [counter] = new Uint32Array(await counterReadBuffer.getMappedRange());
+		await this.#counterReadBuffer.mapAsync(GPUMapMode.READ);
+		const [counter] = new Uint32Array(await this.#counterReadBuffer.getMappedRange());
 
-		await edgesReadBuffer.mapAsync(GPUMapMode.READ);
-		const edges = new Uint32Array(await edgesReadBuffer.getMappedRange());
+		await this.#edgesReadBuffer.mapAsync(GPUMapMode.READ);
+		const edges = new Uint32Array(await this.#edgesReadBuffer.getMappedRange());
 
 		const spanner = new Graph();
 		this.#graph.nodes.forEach((node) => {
@@ -171,8 +173,6 @@ export class ThetaSpanner extends Spanner {
 		for (let i = 0; i < counter!; i++) {
 			const start = edges[i * 2];
 			const end = edges[i * 2 + 1];
-
-			// console.log(i * 2, i * 2 + 1);
 
 			if (start === undefined || end === undefined) {
 				console.warn('start is undefined. continuing...');
@@ -194,17 +194,61 @@ export class ThetaSpanner extends Spanner {
 			spanner.addEdge({ start, end, weight });
 		}
 
-		spanner.edges.forEach((edge) => {
-			if (!this.#graph.edges.has(`${edge.start}_${edge.end}`)) {
-				spanner.removeEdge(edge);
-			}
-		});
+		// spanner.edges.forEach((edge) => {
+		// 	if (!this.#graph.edges.has(`${edge.start}_${edge.end}`)) {
+		// 		spanner.removeEdge(edge);
+		// 	}
+		// });
+
+		this.#counterReadBuffer.unmap();
+		this.#edgesReadBuffer.unmap();
 
 		this.#spanner = spanner;
 		return spanner;
 	}
 
-	get graph(): Graph {
+	get graph(): Graph | undefined {
 		return this.#spanner;
+	}
+
+	set maxDistortion(value: number) {
+		this.#maxDistortion = value;
+		this.#k = this.#maxDistortion;
+		// this.#k = Math.floor(this.#maxDistortion * 50);
+
+		this.#uniformsBufferData.set({
+			k: this.#k,
+			theta: (Math.PI * 2) / this.#k,
+		});
+
+		// this.updateEdgesBuffer();
+	}
+
+	get maxDistortion() {
+		return this.#maxDistortion;
+	}
+
+	private updateEdgesBuffer() {
+		const edgesBufferData = new BufferData(
+			{
+				start: 'uint',
+				end: 'uint',
+			},
+			Math.floor((this.#k * this.#graph.nodes.size) / 2)
+		);
+
+		this.#edgesBuffer = createGPUBuffer({
+			label: 'edges buffer',
+			device: this.#device,
+			data: edgesBufferData,
+			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+		});
+
+		this.#edgesReadBuffer = this.#device.createBuffer({
+			size: this.#edgesBuffer.size,
+			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+		});
+
+		return { edgesBuffer: this.#edgesBuffer, edgesReadBuffer: this.#edgesReadBuffer };
 	}
 }

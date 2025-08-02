@@ -38,23 +38,23 @@
 
 	onMount(async () => {
 		const graph = await loadGraph(selectedGraph);
-		const spanner = await loadSpanner(selectedGraph);
 
 		// console.time('greedy');
 		// const greedySpanner = new GreedySpanner({ graph, device, maxDistortion });
 		// const greedySpannerGraph = await greedySpanner.compute();
 		// console.timeEnd('greedy');
 
-		console.time('theta');
-		const thetaSpanner = new ThetaSpanner({ graph, device, k: 100 });
-		const thetaSpannerGraph = await thetaSpanner.compute();
-		console.timeEnd('theta');
+		// console.time('theta');
+		// const thetaSpanner = new ThetaSpanner({ graph, device, k: 100 });
+		// const thetaSpannerGraph = await thetaSpanner.compute();
+		// console.timeEnd('theta');
 
 		epb = new EdgePathBundlingGPUFloydWarshall({
-			graph,
-			maxDistortion,
-			edgeWeightFactor,
 			device,
+			graph,
+			maxDistortion: 128,
+			edgeWeightFactor,
+			spannerAlgorithm: ThetaSpanner,
 		});
 
 		runGPU();

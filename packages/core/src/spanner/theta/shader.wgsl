@@ -10,6 +10,7 @@ struct Edge {
 
 struct Uniforms {
   k: u32,
+  theta: f32,
   node_count: u32,
 }
 
@@ -18,10 +19,9 @@ struct Uniforms {
 @group(0) @binding(2) var<storage, read_write> counter: atomic<u32>;
 @group(0) @binding(3) var<uniform> uniforms: Uniforms;
 
+const TILE: u32 = 64u;
+const PI: f32 = 3.141592653589793;
 const K       : u32 = 128;
-const TILE    : u32 = 64u;
-const TWO_PI  : f32 = 6.28318530718;
-const THETA   : f32 = TWO_PI / f32(K);
 
 var<workgroup> shPos : array<Position, TILE>;
 var<workgroup> shIdx : array<u32, TILE>;
@@ -32,14 +32,13 @@ fn compute(
   @builtin(local_invocation_id) local_id : vec3<u32>
 ) {
   let i = global_id.x;
-  // if (i >= uniforms.node_count) { return; }
 
   let vi = positions[i];
 
   // best candidate per cone
   var bestDist : array<f32, K>;
   var bestIdx  : array<u32, K>;
-  for (var c : u32 = 0u; c < K; c = c + 1u) {
+  for (var c : u32 = 0u; c < uniforms.k; c = c + 1u) {
     bestDist[c] = 1e30;
     bestIdx[c]  = 0xffffffffu;
   }
@@ -64,8 +63,10 @@ fn compute(
 
       let d = vec2<f32>(shPos[j].x - vi.x, shPos[j].y - vi.y);
       var phi = atan2(d.y, d.x);
-      if (phi < 0.0) { phi = phi + TWO_PI; }
-      let cone = u32(floor(phi / THETA));
+      if (phi < 0.0) { 
+        phi = phi + (PI * 2.0); 
+      }
+      let cone = u32(floor(phi / uniforms.theta));
 
       let dist2 = dot(d, d);
       if (dist2 < bestDist[cone]) {
@@ -78,7 +79,7 @@ fn compute(
   }
 
   // write chosen edges (de-duplicate undirected)
-  for (var c : u32 = 0u; c < K; c = c + 1u) {
+  for (var c : u32 = 0u; c < uniforms.k; c = c + 1u) {
     let j = bestIdx[c];
     if (j != 0xffffffffu && i < j) {
       if (i < uniforms.node_count) {

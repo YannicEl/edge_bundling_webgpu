@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { drawGraphAndBundledEdges } from '$lib/_canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
@@ -26,11 +25,19 @@
 
 	canvas.onResize = () => runGPU();
 
+	$effect(() => {
+		console.log(maxDistortion);
+		if (!theta) return;
+
+		theta.maxDistortion = maxDistortion;
+		runGPU();
+	});
+
 	onMount(async () => {
 		const graph = await loadGraph(selectedGraph);
 
 		greedy = new GreedySpanner({ graph, device, maxDistortion: 2 });
-		theta = new ThetaSpanner({ graph, device, k: 1000 });
+		theta = new ThetaSpanner({ graph, device, maxDistortion: 3 });
 
 		runGPU();
 	});
@@ -38,9 +45,9 @@
 	async function runGPU() {
 		if (!greedy || !theta) return;
 
-		console.time('greedy');
-		const greedySpanner = await greedy.compute();
-		console.timeEnd('greedy');
+		// console.time('greedy');
+		// const greedySpanner = await greedy.compute();
+		// console.timeEnd('greedy');
 
 		console.time('theta');
 		const thetaSpanner = await theta.compute();

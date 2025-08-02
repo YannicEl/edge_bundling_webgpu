@@ -31,14 +31,14 @@ fn compute(
   let edge = edges[uniforms.k];
 
   if(distance_matrix_get(x, y) > edge.weight * uniforms.max_distortion) {
+    var value = min(distance_matrix_get(x, y), distance_matrix_get(x, edge.start) + edge.weight + distance_matrix_get(edge.end, y));
+    value = min(value, distance_matrix_get(x, edge.end) + edge.weight + distance_matrix_get(edge.start, y));
+
+    distance_matrix_set(x, y, value);
+  } else {
     skipped += 1;
     return;
   }
-
-  var value = min(distance_matrix_get(x, y), distance_matrix_get(x, edge.start) + edge.weight + distance_matrix_get(edge.end, y));
-  value = min(value, distance_matrix_get(x, edge.end) + edge.weight + distance_matrix_get(edge.start, y));
-
-  distance_matrix_set(x, y, value);
 }
 
 // Matrix getters and setters

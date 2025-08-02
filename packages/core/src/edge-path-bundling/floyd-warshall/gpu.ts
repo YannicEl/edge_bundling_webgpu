@@ -1,16 +1,8 @@
-import type { EdgePathBundling } from '..';
 import type { Edge } from '../../AdjacencyList';
 import { Graph } from '../../AdjacencyList';
 import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
 import type { Spanner } from '../../spanner';
-import { ThetaSpanner } from '../../spanner/theta/gpu';
-
-export type EdgePathBundlingGPUFloydWarshallParams = {
-	graph: Graph;
-	maxDistortion?: number;
-	edgeWeightFactor?: number;
-	device: GPUDevice;
-};
+import type { EdgePathBundling, EdgePathBundlingParams } from '../index';
 
 export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 	#device: GPUDevice;
@@ -19,38 +11,43 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 	#maxDistortion: number;
 	#edgeWeightFactor: number;
 
-	#spanner?: Spanner;
+	#spanner: Spanner;
 	#floydWarshall?: FloydWarshall;
 
 	constructor({
 		device,
 		graph,
-		maxDistortion = 2,
-		edgeWeightFactor = 1,
-	}: EdgePathBundlingGPUFloydWarshallParams) {
+		maxDistortion,
+		edgeWeightFactor,
+		spannerAlgorithm,
+	}: EdgePathBundlingParams) {
 		this.#device = device;
 
 		this.#graph = graph;
 
 		this.#maxDistortion = maxDistortion;
 		this.#edgeWeightFactor = edgeWeightFactor;
+
+		this.#spanner = new spannerAlgorithm({
+			device: this.#device,
+			graph: this.#graph,
+			maxDistortion: this.#maxDistortion,
+		});
 	}
 
 	async bundle() {
-		if (!this.#spanner) {
-			// this.#spanner = new GreedySpanner({
-			// 	graph: this.#graph,
-			// 	device: this.#device,
-			// 	maxDistortion: this.#maxDistortion,
-			// });
-
-			this.#spanner = new ThetaSpanner({
-				graph: this.#graph,
-				device: this.#device,
-				k: 100,
-			});
-
+		if (!this.#spanner?.graph) {
 			await this.#spanner.compute();
+		}
+
+		if (this.#edgeWeightFactor !== this.#spanner.maxDistortion) {
+			console.log('Max distortion changed. Recomputing Spanner');
+			this.#spanner.maxDistortion = this.#edgeWeightFactor;
+			await this.#spanner.compute();
+		}
+
+		if (!this.#spanner.graph) {
+			throw new Error('Spanner graph not found');
 		}
 
 		if (!this.#floydWarshall) {
@@ -71,10 +68,12 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 
 		const difference: Edge[] = [];
 		this.#graph.edges.forEach((edge, key) => {
-			if (!this.#spanner!.graph.edges.has(key)) {
+			if (!this.#spanner.graph!.edges.has(key)) {
 				difference.push(edge);
 			}
 		});
+
+		console.log('difference', difference.length);
 
 		const shortestPaths = await this.#floydWarshall.shortestPaths(difference);
 

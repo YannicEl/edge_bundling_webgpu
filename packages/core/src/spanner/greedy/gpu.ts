@@ -1,8 +1,8 @@
-import type { Spanner } from '..';
 import { Graph } from '../../AdjacencyList';
 import { AdjacencyMatrix } from '../../AdjacencyMatrix';
 import { BufferData } from '../../BufferData';
 import { createGPUBuffer, writeGPUBuffer } from '../../GPUBuffer';
+import type { Spanner } from '../index';
 import shader from './shader.wgsl?raw';
 
 export type GreedySpannerParams = {
