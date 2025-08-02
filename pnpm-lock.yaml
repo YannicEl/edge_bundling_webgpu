@@ -27,8 +27,8 @@ importers:
         specifier: 'workspace:'
         version: link:../core
       bits-ui:
-        specifier: 2.9.0
-        version: 2.9.0(@internationalized/date@3.8.2)(svelte@5.37.2)
+        specifier: 2.9.1
+        version: 2.9.1(@internationalized/date@3.8.2)(svelte@5.37.2)
     devDependencies:
       '@iconify-json/mdi':
         specifier: 1.2.3
@@ -1168,8 +1168,8 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bits-ui@2.9.0:
-    resolution: {integrity: sha512-5lj7L4/TvC0SQHfynwGSXFXO9mDeVszW4+C+lDbEMQFesWT78Z3tkfPTzGYsm8PBauP847uE5xovDGAhndjuog==}
+  bits-ui@2.9.1:
+    resolution: {integrity: sha512-Fdtc1TKppfEio6fl0XzkrDG8DSvfbYJdrOh4j5KzaGh0kYA6BskMGIXL4JmsZxUS+O5ESFypNjrQ9z9qs3xAdQ==}
     engines: {node: '>=20'}
     peerDependencies:
       '@internationalized/date': ^3.8.1
@@ -2967,7 +2967,7 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bits-ui@2.9.0(@internationalized/date@3.8.2)(svelte@5.37.2):
+  bits-ui@2.9.1(@internationalized/date@3.8.2)(svelte@5.37.2):
     dependencies:
       '@floating-ui/core': 1.7.2
       '@floating-ui/dom': 1.7.2
