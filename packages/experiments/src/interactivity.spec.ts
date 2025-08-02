@@ -13,7 +13,7 @@ const steps = [
 ] as const;
 
 describe('Interactivity', () => {
-	test.each(datasets)('%s', { repeats: ITERATIONS - 1 }, async (dataset, graph, times) => {
+	test.sequential.each(datasets)('%s', { repeats: ITERATIONS - 1 }, async (dataset, graph, times) => {
 		const { device } = await initWebGPU();
 
 		const epb = new EdgePathBundlingGPUFloydWarshall({
