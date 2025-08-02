@@ -30,6 +30,6 @@
 	},
 	"dependencies": {
 		"@bachelor/core": "workspace:",
-		"bits-ui": "2.9.0"
+		"bits-ui": "2.9.1"
 	}
 }
