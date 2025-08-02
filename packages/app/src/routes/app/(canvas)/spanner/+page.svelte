@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { drawGraphAndBundledEdges } from '$lib/_canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
@@ -30,7 +29,7 @@
 		const graph = await loadGraph(selectedGraph);
 
 		greedy = new GreedySpanner({ graph, device, maxDistortion: 2 });
-		theta = new ThetaSpanner({ graph, device, k: 1000 });
+		theta = new ThetaSpanner({ graph, device, k: 128 });
 
 		runGPU();
 	});
