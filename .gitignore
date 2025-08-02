@@ -1,7 +1,2 @@
 node_modules
-.cloudflare
-.env
-.env.*
-!.env.example
 .DS_Store
-.turbo

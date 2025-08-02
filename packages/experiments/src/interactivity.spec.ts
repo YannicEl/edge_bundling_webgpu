@@ -1,11 +1,26 @@
 import type { DatasetName } from '@bachelor/core/datasets/load';
 import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
+import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
+import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 import { initWebGPU } from '@bachelor/core/webGpu';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 import type { CSV, CSVRow } from './utils';
 import { ITERATIONS, loadDatasets, mean, median, writeResult } from './utils';
 
 const datasets = await loadDatasets();
+
+const algorithms = [
+	{
+		name: 'greedy',
+		value: GreedySpanner,
+	},
+	{
+		name: 'theta',
+		value: ThetaSpanner,
+	},
+] as const;
+
+type AlgorithmName = (typeof algorithms)[number]['name'];
 
 const experiments = [
 	{
@@ -45,111 +60,118 @@ const experiments = [
 
 type ExperimentName = (typeof experiments)[number]['name'];
 
-const results = {} as Record<ExperimentName, Record<DatasetName, number[]>>;
+const results = {} as Record<AlgorithmName, Record<ExperimentName, Record<DatasetName, number[]>>>;
 
 beforeAll(() => {
-	experiments.forEach(({ name }) => {
-		results[name] = {} as Record<DatasetName, number[]>;
+	algorithms.forEach(({ name: algorithmName }) => {
+		results[algorithmName] = {} as Record<ExperimentName, Record<DatasetName, number[]>>;
 
-		datasets.forEach(({ dataset }) => {
-			results[name][dataset] = [];
+		experiments.forEach(({ name: experimentName }) => {
+			results[algorithmName][experimentName] = {} as Record<DatasetName, number[]>;
+
+			datasets.forEach(({ dataset }) => {
+				results[algorithmName][experimentName][dataset] = [];
+			});
 		});
 	});
+
+	console.log(results);
 });
 
-describe.sequential.for(experiments)('Interactivity $name', (experiment) => {
-	test.sequential.for(datasets)(
-		'$dataset',
-		{ repeats: ITERATIONS - 1 },
-		async ({ dataset, graph }) => {
-			const { device } = await initWebGPU();
-			const epb = new EdgePathBundlingGPUFloydWarshall({
-				device,
-				graph,
-				maxDistortion: 2,
-				edgeWeightFactor: 2,
-			});
-
-			const start = performance.now();
-			await epb.bundle();
-			const end = performance.now();
-
-			results[experiment.name][dataset].push(end - start);
-
-			for await (const stepValues of experiment.steps) {
-				const start = performance.now();
-				stepValues.forEach(({ parameter, value }) => {
-					epb[parameter] = value;
+describe.sequential.for(algorithms)('Interactivity $name', (algorithm) => {
+	describe.sequential.for(experiments)('$name', (experiment) => {
+		test.sequential.for(datasets)(
+			'$dataset',
+			{ repeats: ITERATIONS - 1 },
+			async ({ dataset, graph }) => {
+				const { device } = await initWebGPU();
+				const epb = new EdgePathBundlingGPUFloydWarshall({
+					device,
+					graph,
+					spannerAlgorithm: algorithm.value,
+					maxDistortion: 2,
+					edgeWeightFactor: 2,
 				});
 
+				const start = performance.now();
 				await epb.bundle();
 				const end = performance.now();
 
-				results[experiment.name][dataset].push(end - start);
+				results[algorithm.name][experiment.name][dataset].push(end - start);
+
+				for await (const stepValues of experiment.steps) {
+					const start = performance.now();
+					stepValues.forEach(({ parameter, value }) => {
+						epb[parameter] = value;
+					});
+
+					await epb.bundle();
+					const end = performance.now();
+
+					results[algorithm.name][experiment.name][dataset].push(end - start);
+				}
 			}
-		}
-	);
+		);
+	});
 });
 
 afterAll(async () => {
-	Object.entries(results).forEach(async ([name, values]) => {
-		console.log({ values });
+	console.log(results);
 
-		const csv: CSV = [];
+	Object.entries(results).forEach(async ([algorithmName, values]) => {
+		Object.entries(values).forEach(async ([experimentName, values]) => {
+			const csv: CSV = [];
 
-		const header: CSVRow = ['dataset'];
+			const header: CSVRow = ['iteration'];
 
-		const steps = experiments.find(({ name: stepName }) => stepName === name)?.steps;
-		if (!steps) {
-			throw new Error(`Step ${name} not found`);
-		}
-
-		const aggregationTypes = [
-			['mean', mean],
-			['median', median],
-		] as const;
-		aggregationTypes.forEach(([type]) => {
-			header.push(`${type}_initial`);
-
-			for (const step of steps) {
-				header.push(
-					`${type}_${step.map(({ parameter, value }) => `${parameter}_${value}`).join('_')}`
-				);
+			const steps = experiments.find(({ name: stepName }) => stepName === experimentName)?.steps;
+			if (!steps) {
+				throw new Error(`Step ${experimentName} not found`);
 			}
-		});
 
-		for (let i = 0; i < ITERATIONS; i++) {
-			header.push(`run_${i + 1}_initial`);
+			header.push('initial');
+			steps.forEach((step) => {
+				header.push(step.map(({ parameter, value }) => `${parameter}_${value}`).join('_'));
+			});
 
-			for (const step of steps) {
-				header.push(`run_${step.map(({ parameter, value }) => `${parameter}_${value}`).join('_')}`);
-			}
-		}
+			csv.push(header);
 
-		csv.push(header);
+			Object.entries(values).forEach(async ([dataset, times]) => {
+				const csv: CSV = [];
+				csv.push(header);
 
-		Object.entries(values).forEach(([dataset, times]) => {
-			const row: CSVRow = [dataset];
-
-			aggregationTypes.forEach(([_, fn]) => {
-				for (let i = 0; i <= steps.length; i++) {
+				for (let i = 0; i < ITERATIONS; i++) {
 					const values: number[] = [];
 
-					for (let j = i; j < times.length; j += steps.length + 1) {
-						values.push(times[j]!);
+					for (let j = 0; j <= steps.length; j++) {
+						values.push(times[j + i * (steps.length + 1)]!);
 					}
 
-					row.push(fn(values));
+					csv.push([i + 1, ...values]);
 				}
-			});
 
-			times.forEach((time) => {
-				row.push(time);
-			});
+				const aggregationTypes = [
+					['mean', mean],
+					['median', median],
+				] as const;
 
-			csv.push(row);
+				aggregationTypes.forEach(([name, fn]) => {
+					const row: CSVRow = [name];
+
+					for (let i = 0; i <= steps.length; i++) {
+						const values: number[] = [];
+						for (let j = 0; j < ITERATIONS; j++) {
+							values.push(times[j * (steps.length + 1) + i]!);
+						}
+
+						row.push(fn(values));
+					}
+
+					csv.push(row);
+				});
+
+				await writeResult(`interactivity_${dataset}_${algorithmName}_${experimentName}`, csv);
+			});
 		});
-
-		await writeResult(`interactivity_${name}`, csv);
 	});
 });

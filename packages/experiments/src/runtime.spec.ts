@@ -1,5 +1,7 @@
 import type { DatasetName } from '@bachelor/core/datasets/load';
 import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
+import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
+import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 import { initWebGPU } from '@bachelor/core/webGpu';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 import type { CSV, CSVRow } from './utils';
@@ -7,15 +9,34 @@ import { ITERATIONS, loadDatasets, mean, median, writeResult } from './utils';
 
 const datasets = await loadDatasets();
 
-const results = {} as Record<DatasetName, number[]>;
+const experiments = [
+	{
+		name: 'greedy',
+		algorithm: GreedySpanner,
+	},
+	{
+		name: 'theta',
+		algorithm: ThetaSpanner,
+	},
+] as const;
+
+type ExperimentName = (typeof experiments)[number]['name'];
+
+const results = {} as Record<ExperimentName, Record<DatasetName, number[]>>;
 
 beforeAll(() => {
-	datasets.forEach(({ dataset }) => {
-		results[dataset] = [];
+	experiments.forEach(({ name }) => {
+		results[name] = {} as Record<DatasetName, number[]>;
+
+		datasets.forEach(({ dataset }) => {
+			results[name][dataset] = [];
+		});
 	});
+
+	console.log(results);
 });
 
-describe.sequential('Runtime', () => {
+describe.sequential.for(experiments)('Runtime $name', (experiment) => {
 	test.sequential.for(datasets)(
 		'$dataset',
 		{ repeats: ITERATIONS - 1 },
@@ -25,6 +46,7 @@ describe.sequential('Runtime', () => {
 			const epb = new EdgePathBundlingGPUFloydWarshall({
 				device,
 				graph,
+				spannerAlgorithm: experiment.algorithm,
 				maxDistortion: 2,
 				edgeWeightFactor: 2,
 			});
@@ -33,45 +55,33 @@ describe.sequential('Runtime', () => {
 			await epb.bundle();
 			const end = performance.now();
 
-			results[dataset].push(end - start);
+			results[experiment.name][dataset].push(end - start);
 		}
 	);
 });
 
 afterAll(async () => {
-	const csv: CSV = [];
+	Object.entries(results).forEach(async ([name, values]) => {
+		const header: CSVRow = ['iteration', 'time'];
 
-	const header: CSVRow = ['dataset'];
+		Object.entries(values).forEach(async ([dataset, times]) => {
+			const csv: CSV = [];
+			csv.push(header);
 
-	const aggregationTypes = [
-		['mean', mean],
-		['median', median],
-	] as const;
-	aggregationTypes.forEach(([type]) => {
-		header.push(type);
-	});
+			times.forEach((time, i) => {
+				csv.push([i + 1, time]);
+			});
 
-	for (let i = 0; i < ITERATIONS; i++) {
-		header.push(`run_${i + 1}`);
-	}
+			const aggregationTypes = [
+				['mean', mean],
+				['median', median],
+			] as const;
 
-	csv.push(header);
+			aggregationTypes.forEach(([name, fn]) => {
+				csv.push([name, fn(times)]);
+			});
 
-	datasets.forEach(({ dataset }) => {
-		const row: CSVRow = [dataset];
-
-		const times = results[dataset];
-
-		times.forEach((time) => {
-			row.push(time);
+			await writeResult(`runtime_${dataset}_${name}`, csv);
 		});
-
-		aggregationTypes.forEach(([_, fn]) => {
-			row.push(fn(times));
-		});
-
-		csv.push(row);
 	});
-
-	await writeResult('runtime', csv);
 });
