@@ -37,7 +37,7 @@
 		const graph = await loadGraph(selectedGraph);
 
 		greedy = new GreedySpanner({ graph, device, maxDistortion: 2 });
-		theta = new ThetaSpanner({ graph, device, maxDistortion: 3 });
+		theta = new ThetaSpanner({ graph, device, maxDistortion: 128 });
 
 		runGPU();
 	});

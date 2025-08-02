@@ -21,7 +21,7 @@ struct Uniforms {
 
 const TILE: u32 = 64u;
 const PI: f32 = 3.141592653589793;
-const K       : u32 = 128;
+const K: u32 = 128;
 
 var<workgroup> shPos : array<Position, TILE>;
 var<workgroup> shIdx : array<u32, TILE>;
@@ -38,7 +38,7 @@ fn compute(
   // best candidate per cone
   var bestDist : array<f32, K>;
   var bestIdx  : array<u32, K>;
-  for (var c : u32 = 0u; c < uniforms.k; c = c + 1u) {
+  for (var c : u32 = 0u; c < K; c = c + 1u) {
     bestDist[c] = 1e30;
     bestIdx[c]  = 0xffffffffu;
   }
@@ -79,7 +79,7 @@ fn compute(
   }
 
   // write chosen edges (de-duplicate undirected)
-  for (var c : u32 = 0u; c < uniforms.k; c = c + 1u) {
+  for (var c : u32 = 0u; c < K; c = c + 1u) {
     let j = bestIdx[c];
     if (j != 0xffffffffu && i < j) {
       if (i < uniforms.node_count) {

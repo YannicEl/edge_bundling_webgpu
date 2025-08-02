@@ -194,11 +194,11 @@ export class ThetaSpanner extends Spanner {
 			spanner.addEdge({ start, end, weight });
 		}
 
-		// spanner.edges.forEach((edge) => {
-		// 	if (!this.#graph.edges.has(`${edge.start}_${edge.end}`)) {
-		// 		spanner.removeEdge(edge);
-		// 	}
-		// });
+		spanner.edges.forEach((edge) => {
+			if (!this.#graph.edges.has(`${edge.start}_${edge.end}`)) {
+				spanner.removeEdge(edge);
+			}
+		});
 
 		this.#counterReadBuffer.unmap();
 		this.#edgesReadBuffer.unmap();
