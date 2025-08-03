@@ -1,0 +1,16 @@
+[project]
+name = "quality"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.11.13"
+dependencies = [
+    "cmcrameri>=1.9",
+    "matplotlib>=3.10.3",
+    "networkx>=3.5",
+    "numpy>=2.3.2",
+    "nx2ipe>=0.0.7",
+    "pillow>=11.3.0",
+    "scipy>=1.16.1",
+    "setuptools>=80.9.0",
+]
