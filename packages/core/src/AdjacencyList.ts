@@ -1,3 +1,4 @@
+import type { BundledEdge } from './edge-path-bundling/index';
 import type { GraphJSON } from './Graph';
 
 export type Node = {
@@ -80,3 +81,20 @@ export class Graph {
 		};
 	}
 }
+
+export type BundlingJSON = {
+	nodes: [x: number, y: number][];
+	node_ids: string[];
+	edges: [start: string, end: string][];
+	splines: {
+		[key: `${number},${number}`]: [x: number, y: number][];
+	};
+	dimensions: {
+		xmin: number;
+		xmax: number;
+		ymin: number;
+		ymax: number;
+	};
+};
+
+export function exportBundling(graph: Graph, bundledEdges: BundledEdge): BundlingJSON {}

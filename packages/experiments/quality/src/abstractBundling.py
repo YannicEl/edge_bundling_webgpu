@@ -6,6 +6,7 @@ import scipy.interpolate as si
 import cmcrameri as cmc
 import networkx as nx
 from abc import ABC, abstractmethod
+import json
 
 ### Plotting Parameters ###
 LINEWIDTH = 1.0
@@ -173,3 +174,63 @@ class AbstractBundling:
         
         for x in range(1, k + 1): coeff /= x
         return coeff
+
+    def export(self, file_path: str):
+        '''
+        Export the bundled graph to a JSON file that can be imported by ImportedBundling.
+        
+        The exported format includes:
+        - nodes: list of [x, y] coordinates
+        - node_ids: list of node IDs corresponding to the nodes list
+        - edges: list of [u, v] pairs
+        - bundling: dictionary containing splines, layers, and strokes
+        
+        Args:
+            file_path: Path to save the JSON file.
+        
+        Returns:
+            None.
+        '''
+        
+        # Prepare nodes data
+        nodes = []
+        node_ids = []
+        for node_id, node_data in self.G.nodes(data=True):
+            nodes.append([node_data['X'], node_data['Y']])
+            node_ids.append(node_id)
+        
+        # Prepare edges data
+        edges = []
+        for u, v in self.G.edges():
+            edges.append([u, v])
+        
+        splines = {}
+        for u, v, data in self.G.edges(data=True):
+            edge_key = f"{u},{v}"
+            
+            # Export spline if available
+            if 'Spline' in data and data['Spline'] is not None:
+                splines[edge_key] = data['Spline'].points
+        
+        # Prepare complete data structure
+        export_data = {
+            'nodes': nodes,
+            'node_ids': node_ids,
+            'edges': edges,
+            'splines': splines
+        }
+        
+        # Add graph dimensions if available
+        if hasattr(self.G, 'graph') and 'xmin' in self.G.graph:
+            export_data['dimensions'] = {
+                'xmin': self.G.graph['xmin'],
+                'xmax': self.G.graph['xmax'],
+                'ymin': self.G.graph['ymin'],
+                'ymax': self.G.graph['ymax']
+            }
+        
+        # Save to file if file_path is provided
+        with open(file_path, 'w') as f:
+            json.dump(export_data, f, indent=2)
+        
+        return export_data
