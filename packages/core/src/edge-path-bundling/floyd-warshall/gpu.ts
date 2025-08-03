@@ -36,9 +36,7 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 	}
 
 	async bundle() {
-		if (!this.#spanner?.graph) {
-			await this.#spanner.compute();
-		}
+		await this.#spanner.compute();
 
 		if (this.#maxDistortion !== this.#spanner.maxDistortion) {
 			console.log('Max distortion changed. Recomputing Spanner');

@@ -9,12 +9,15 @@ import shader from './shader.wgsl?raw';
 export type FloydWarshallParams = {
 	graph: Graph;
 	device: GPUDevice;
-	edgeWeightFactor?: number;
+	edgeWeightFactor: number;
 };
 
 export class FloydWarshall {
 	#device: GPUDevice;
+
 	#graph: Graph;
+
+	#edgeWeightFactor: number;
 
 	#shaderModule: GPUShaderModule;
 	#pipeline: GPUComputePipeline;
@@ -34,10 +37,12 @@ export class FloydWarshall {
 
 	#pathsBufferCache: Map<number, GPUBuffer>;
 
-	constructor({ graph, device, edgeWeightFactor = 1 }: FloydWarshallParams) {
+	constructor({ graph, device, edgeWeightFactor }: FloydWarshallParams) {
 		this.#device = device;
 
 		this.#graph = graph;
+
+		this.#edgeWeightFactor = edgeWeightFactor;
 
 		this.#pathsBufferCache = new Map();
 
@@ -340,5 +345,9 @@ export class FloydWarshall {
 			buffer: this.#uniformsBuffer,
 			data: this.#uniformsBufferData,
 		});
+	}
+
+	get edgeWeightFactor() {
+		return this.#edgeWeightFactor;
 	}
 }

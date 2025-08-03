@@ -11,8 +11,8 @@ struct Uniforms {
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> distance_matrix: array<f32>;
-@group(0) @binding(2) var<storage, read> edges: array<Edge>;
-@group(0) @binding(3) var<storage, read_write> skipped: u32;
+@group(0) @binding(2) var<storage, read> graph_edges: array<Edge>;
+@group(0) @binding(3) var<storage, read_write> spanner_edges: array<u32>;
 
 override node_count: u32;
 
@@ -28,25 +28,35 @@ fn compute(
     return;
   }
 
-  let edge = edges[uniforms.k];
-
-  if(distance_matrix_get(x, y) > edge.weight * uniforms.max_distortion) {
-    var value = min(distance_matrix_get(x, y), distance_matrix_get(x, edge.start) + edge.weight + distance_matrix_get(edge.end, y));
-    value = min(value, distance_matrix_get(x, edge.end) + edge.weight + distance_matrix_get(edge.start, y));
+  let edge = graph_edges[uniforms.k];
+  let current_distance = distance_matrix_get(edge.start, edge.end);
+  
+  if(current_distance > edge.weight * uniforms.max_distortion) {
+    var value = min(
+      distance_matrix_get(x, y), 
+      distance_matrix_get(x, edge.start) + edge.weight + distance_matrix_get(edge.end, y)
+    );
+    
+    value = min(
+      value, 
+      distance_matrix_get(x, edge.end) + edge.weight + distance_matrix_get(edge.start, y)
+    );
 
     distance_matrix_set(x, y, value);
+
+    spanner_edges[uniforms.k] = uniforms.k;
   } else {
-    skipped += 1;
-    return;
+    // distance_matrix_set(x, y, current_distance);
+    spanner_edges[uniforms.k] = arrayLength(&graph_edges);
   }
 }
 
-// Matrix getters and setters
-
+// Read buffer getters and setters
 fn distance_matrix_get(x: u32, y: u32) -> f32 {
   return distance_matrix[get_matrix_index(x, y)];
 }
 
+// Write buffer getters and setters
 fn distance_matrix_set(x: u32, y: u32, value: f32) {
   distance_matrix[get_matrix_index(x, y)] = value;
 }

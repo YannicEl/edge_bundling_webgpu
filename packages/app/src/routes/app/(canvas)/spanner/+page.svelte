@@ -37,7 +37,7 @@
 		const graph = await loadGraph(selectedGraph);
 
 		greedy = new GreedySpanner({ graph, device, maxDistortion: 2 });
-		theta = new ThetaSpanner({ graph, device, maxDistortion: 128 });
+		theta = new ThetaSpanner({ graph, device, maxDistortion: 2 });
 
 		runGPU();
 	});
@@ -45,9 +45,13 @@
 	async function runGPU() {
 		if (!greedy || !theta) return;
 
-		// console.time('greedy');
-		// const greedySpanner = await greedy.compute();
-		// console.timeEnd('greedy');
+		const graph = await loadGraph(selectedGraph);
+
+		greedy = new GreedySpanner({ graph, device, maxDistortion: 2 });
+
+		console.time('greedy');
+		const greedySpanner = await greedy.compute();
+		console.timeEnd('greedy');
 
 		console.time('theta');
 		const thetaSpanner = await theta.compute();
@@ -64,8 +68,8 @@
 		// const isSame = JSON.stringify(spannerControl.toJSON()) === JSON.stringify(lol.toJSON());
 		// console.log({ isSame });
 
-		console.log(thetaSpanner);
-		drawGraph({ ctx: context, graph: thetaSpanner, drawLabels: false });
+		console.log({ spannerControl });
+		drawGraph({ ctx: context, graph: greedySpanner, drawLabels: false });
 	}
 </script>
 

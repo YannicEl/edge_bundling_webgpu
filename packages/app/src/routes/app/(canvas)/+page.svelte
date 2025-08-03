@@ -10,6 +10,7 @@
 	import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundling/floyd-warshall/gpu';
 	import { onMount } from 'svelte';
 	import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
+	import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -52,9 +53,9 @@
 		epb = new EdgePathBundlingGPUFloydWarshall({
 			device,
 			graph,
-			maxDistortion: 128,
+			maxDistortion,
 			edgeWeightFactor,
-			spannerAlgorithm: ThetaSpanner,
+			spannerAlgorithm: GreedySpanner,
 		});
 
 		runGPU();

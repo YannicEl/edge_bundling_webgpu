@@ -2,47 +2,41 @@ import { Graph } from '../../AdjacencyList';
 import { AdjacencyMatrix } from '../../AdjacencyMatrix';
 import { BufferData } from '../../BufferData';
 import { createGPUBuffer, writeGPUBuffer } from '../../GPUBuffer';
-import type { Spanner } from '../index';
+import { Spanner, type SpannerParams } from '../index';
 import shader from './shader.wgsl?raw';
 
-export type GreedySpannerParams = {
-	device: GPUDevice;
-	graph: Graph;
-	maxDistortion: number;
-};
-
-export class GreedySpanner implements Spanner {
-	#graph: Graph;
-	#spanner: Graph;
-	#maxDistortion: number;
+export class GreedySpanner extends Spanner {
 	#device: GPUDevice;
+
+	#graph: Graph;
+	#spanner?: Graph;
+
+	#maxDistortion: number;
 
 	#distanceMatrix: AdjacencyMatrix<Float32Array>;
 	#distanceMatrixBuffer: GPUBuffer;
-	#distanceMatrixReadBuffer: GPUBuffer;
 
 	#uniformsBufferData: BufferData<{ k: 'uint'; max_distortion: 'float' }>;
 	#uniformsBuffer: GPUBuffer;
 
-	#edgesBufferData: BufferData<{ start: 'uint'; end: 'uint'; weight: 'float' }>;
-	#edgesBuffer: GPUBuffer;
+	#graphEdgesBufferData: BufferData<{ start: 'uint'; end: 'uint'; weight: 'float' }>;
+	#graphEdgesBuffer: GPUBuffer;
 
-	#skippedBufferData: BufferData<{ skipped: 'uint' }>;
-	#skippedBuffer: GPUBuffer;
-	#skippedReadBuffer: GPUBuffer;
+	#spannerEdgesBuffer: GPUBuffer;
+	#spannerEdgesReadBuffer: GPUBuffer;
 
 	#shaderModule: GPUShaderModule;
 	#pipeline: GPUComputePipeline;
 	#bindGroup: GPUBindGroup;
 
-	constructor({ device, graph, maxDistortion }: GreedySpannerParams) {
+	constructor({ device, graph, maxDistortion }: SpannerParams) {
+		super();
+
 		this.#device = device;
 
 		this.#graph = graph;
-		this.#spanner = new Graph();
 
 		this.#maxDistortion = maxDistortion;
-
 		this.#uniformsBufferData = new BufferData({ k: 'uint', max_distortion: 'float' });
 		this.#uniformsBufferData.set({ max_distortion: this.#maxDistortion });
 
@@ -53,7 +47,7 @@ export class GreedySpanner implements Spanner {
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 		});
 
-		this.#edgesBufferData = new BufferData(
+		this.#graphEdgesBufferData = new BufferData(
 			{
 				start: 'uint',
 				end: 'uint',
@@ -62,11 +56,22 @@ export class GreedySpanner implements Spanner {
 			this.#graph.edges.size
 		);
 
-		this.#edgesBuffer = createGPUBuffer({
-			label: 'edges buffer',
+		this.#graphEdgesBuffer = createGPUBuffer({
+			label: 'graph edges buffer',
 			device: this.#device,
-			data: this.#edgesBufferData,
+			data: this.#graphEdgesBufferData,
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+		});
+
+		this.#spannerEdgesBuffer = device.createBuffer({
+			label: 'spanner edges buffer',
+			size: this.#graph.edges.size * 4,
+			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+		});
+
+		this.#spannerEdgesReadBuffer = this.#device.createBuffer({
+			size: this.#spannerEdgesBuffer.size,
+			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 		});
 
 		this.#distanceMatrix = new AdjacencyMatrix(this.#graph.nodes.size, Float32Array);
@@ -78,29 +83,10 @@ export class GreedySpanner implements Spanner {
 		}
 
 		this.#distanceMatrixBuffer = createGPUBuffer({
-			label: 'distance matrix',
+			label: 'distance matrix buffer',
 			device,
 			data: this.#distanceMatrix.buffer,
 			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
-		});
-
-		this.#distanceMatrixReadBuffer = this.#device.createBuffer({
-			size: this.#distanceMatrix.buffer.byteLength,
-			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-		});
-
-		this.#skippedBufferData = new BufferData({ skipped: 'uint' });
-		this.#skippedBufferData.set({ skipped: 0 });
-		this.#skippedBuffer = createGPUBuffer({
-			label: 'skipped buffer',
-			device: this.#device,
-			data: this.#skippedBufferData,
-			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
-		});
-
-		this.#skippedReadBuffer = this.#device.createBuffer({
-			size: 4,
-			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
 		});
 
 		this.#shaderModule = this.#device.createShaderModule({ code: shader });
@@ -122,30 +108,21 @@ export class GreedySpanner implements Spanner {
 			entries: [
 				{ binding: 0, resource: { buffer: this.#uniformsBuffer } },
 				{ binding: 1, resource: { buffer: this.#distanceMatrixBuffer } },
-				{ binding: 2, resource: { buffer: this.#edgesBuffer } },
-				{ binding: 3, resource: { buffer: this.#skippedBuffer } },
+				{ binding: 2, resource: { buffer: this.#graphEdgesBuffer } },
+				{ binding: 3, resource: { buffer: this.#spannerEdgesBuffer } },
 			],
 		});
 	}
 
-	set maxDistortion(value: number) {
-		this.#maxDistortion = value;
-		this.#uniformsBufferData.set({ max_distortion: this.#maxDistortion });
-	}
-
-	get graph() {
-		return this.#spanner;
-	}
-
 	async compute(): Promise<Graph> {
-		const skippedReadBuffer = this.#device.createBuffer({
-			size: 4,
-			usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-		});
+		if (this.#spanner) {
+			console.log('Spanner already computed');
+			return this.#spanner;
+		}
 
 		this.#spanner = new Graph();
 		this.#graph.nodes.forEach((node) => {
-			this.#spanner.addNode(node);
+			this.#spanner!.addNode(node);
 		});
 
 		const sortedEdges = Array.from(this.#graph.edges)
@@ -153,110 +130,88 @@ export class GreedySpanner implements Spanner {
 			.sort((a, b) => a.weight - b.weight);
 
 		sortedEdges.forEach(({ start, end, weight }, index) => {
-			this.#edgesBufferData.set({ start, end, weight }, index);
+			this.#graphEdgesBufferData.set({ start, end, weight }, index);
 		});
 
 		writeGPUBuffer({
 			device: this.#device,
-			buffer: this.#edgesBuffer,
-			data: this.#edgesBufferData,
+			buffer: this.#graphEdgesBuffer,
+			data: this.#graphEdgesBufferData,
 		});
 
-		let k = 0;
-		let skipped = 0;
-		let copyTime = 0;
-		let readTime = 0;
-		for (const edge of sortedEdges) {
+		for (let k = 0; k < sortedEdges.length; k++) {
 			this.#uniformsBufferData.set({ k });
-			// writeGPUBuffer({
-			// 	device: this.#device,
-			// 	buffer: this.#uniformsBuffer,
-			// 	data: this.#uniformsBufferData,
-			// });
+			writeGPUBuffer({
+				device: this.#device,
+				buffer: this.#uniformsBuffer,
+				data: this.#uniformsBufferData,
+			});
 
-			k++;
+			const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
+			const pass = encoder.beginComputePass({ label: 'compute builtin pass' });
 
-			if (this.#distanceMatrix.get(edge.start, edge.end) > this.#maxDistortion * edge.weight) {
-				this.#spanner.addEdge(edge);
+			pass.setPipeline(this.#pipeline);
+			pass.setBindGroup(0, this.#bindGroup);
+			pass.dispatchWorkgroups(
+				Math.ceil(this.#distanceMatrix.size / 8),
+				Math.ceil(this.#distanceMatrix.size / 8)
+			);
+			pass.end();
 
-				for (let x = 0; x < this.#distanceMatrix.size; x++) {
-					for (let y = 0; y < this.#distanceMatrix.size; y++) {
-						const weight = Math.min(
-							this.#distanceMatrix.get(x, y),
-							this.#distanceMatrix.get(x, edge.start) +
-								edge.weight +
-								this.#distanceMatrix.get(edge.end, y),
-							this.#distanceMatrix.get(x, edge.end) +
-								edge.weight +
-								this.#distanceMatrix.get(edge.start, y)
-						);
-						this.#distanceMatrix.set(x, y, weight);
-					}
+			const commandBuffer = encoder.finish();
+			this.#device.queue.submit([commandBuffer]);
+		}
+
+		const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
+
+		encoder.copyBufferToBuffer(
+			this.#spannerEdgesBuffer,
+			0,
+			this.#spannerEdgesReadBuffer,
+			0,
+			this.#spannerEdgesBuffer.size
+		);
+
+		const commandBuffer = encoder.finish();
+		this.#device.queue.submit([commandBuffer]);
+
+		await this.#spannerEdgesReadBuffer.mapAsync(GPUMapMode.READ);
+
+		const spannerEdges = new Uint32Array(await this.#spannerEdgesReadBuffer.getMappedRange());
+
+		for (let i = 0; i < spannerEdges.length; i++) {
+			const edgeIndex = spannerEdges[i];
+			if (edgeIndex === undefined) {
+				throw new Error(`Edge ${i} is undefined`);
+			}
+
+			if (edgeIndex !== this.#graph.edges.size) {
+				const edge = sortedEdges[edgeIndex];
+				if (!edge) {
+					throw new Error(`Edge ${spannerEdges[i]} not found`);
 				}
 
-				// const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
-				// const pass = encoder.beginComputePass({ label: 'compute builtin pass' });
-
-				// pass.setPipeline(this.#pipeline!);
-				// pass.setBindGroup(0, this.#bindGroup);
-				// pass.dispatchWorkgroups(
-				// 	Math.ceil(this.#distanceMatrix.size / 8),
-				// 	Math.ceil(this.#distanceMatrix.size / 8)
-				// );
-				// pass.end();
-
-				// encoder.copyBufferToBuffer(
-				// 	this.#distanceMatrixBuffer,
-				// 	0,
-				// 	this.#distanceMatrixReadBuffer,
-				// 	0,
-				// 	this.#distanceMatrixBuffer.size
-				// );
-
-				// const commandBuffer = encoder.finish();
-				// this.#device.queue.submit([commandBuffer]);
-
-				// let start = performance.now();
-				// await this.#distanceMatrixReadBuffer.mapAsync(GPUMapMode.READ);
-				// readTime += performance.now() - start;
-
-				// const distances = new Float32Array(await this.#distanceMatrixReadBuffer.getMappedRange());
-
-				// start = performance.now();
-				// const distancesCopy = new Float32Array(distances.byteLength);
-				// distancesCopy.set(new Float32Array(distances));
-				// copyTime += performance.now() - start;
-
-				// this.#distanceMatrix.values = distancesCopy;
-
-				// await this.#distanceMatrixReadBuffer.unmap();
-			} else {
-				skipped++;
+				this.#spanner.addEdge(edge);
 			}
 		}
 
-		// const encoder = this.#device.createCommandEncoder({ label: 'compute builtin encoder' });
-
-		// encoder.copyBufferToBuffer(
-		// 	this.#skippedBuffer,
-		// 	0,
-		// 	this.#skippedReadBuffer,
-		// 	0,
-		// 	this.#skippedBuffer.size
-		// );
-
-		// const commandBuffer = encoder.finish();
-		// this.#device.queue.submit([commandBuffer]);
-
-		// await this.#skippedReadBuffer.mapAsync(GPUMapMode.READ);
-		// const [newSkipped] = new Uint32Array(await this.#skippedReadBuffer.getMappedRange());
-
-		// console.log({ newSkipped });
-		// console.log({ copyTime, readTime });
-
-		// console.log({ skipped });
-		// console.log({ skippedPercentage: (skipped / sortedEdges.length) * 100 });
+		this.#spannerEdgesReadBuffer.unmap();
 
 		return this.#spanner;
+	}
+
+	get graph() {
+		return this.#spanner;
+	}
+
+	set maxDistortion(value: number) {
+		this.#maxDistortion = value;
+		this.#uniformsBufferData.set({ max_distortion: this.#maxDistortion });
+
+		this.#spanner = undefined;
+	}
+
+	get maxDistortion() {
+		return this.#maxDistortion;
 	}
 }

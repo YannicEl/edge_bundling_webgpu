@@ -74,8 +74,6 @@ beforeAll(() => {
 			});
 		});
 	});
-
-	console.log(results);
 });
 
 describe.sequential.for(algorithms)('Interactivity $name', (algorithm) => {
@@ -116,8 +114,6 @@ describe.sequential.for(algorithms)('Interactivity $name', (algorithm) => {
 });
 
 afterAll(async () => {
-	console.log(results);
-
 	Object.entries(results).forEach(async ([algorithmName, values]) => {
 		Object.entries(values).forEach(async ([experimentName, values]) => {
 			const csv: CSV = [];
