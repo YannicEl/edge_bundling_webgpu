@@ -28,7 +28,138 @@ export function drawCircle(
 	ctx.fill();
 }
 
+export function calcAngle(start: Point, end: Point): number {
+	const x = end.x - start.x;
+	const y = end.y - start.y;
+
+	let angle = (Math.atan2(y, x) * 180) / Math.PI;
+
+	if (angle < 0) {
+		angle = 360 + angle;
+	}
+
+	if (angle > 180) {
+		angle = (angle + 180) % 360;
+	}
+	angle = angle / 180;
+
+	angle += 0.75;
+	if (angle > 1) {
+		angle = angle - 1;
+	}
+
+	return angle;
+}
+
+/**
+ * Calculate binomial coefficient C(n,k)
+ */
+function binomial(n: number, k: number): number {
+	let coefficient = 1;
+	let x = n - k + 1;
+	while (x <= n) {
+		coefficient *= x;
+		x += 1;
+	}
+
+	for (let x = 1; x <= k; x++) {
+		coefficient /= x;
+	}
+
+	return coefficient;
+}
+
+/**
+ * Approximate Bezier curve using the same algorithm as Python implementation TODO reference in readme
+ * @param points Array of control points
+ * @param n Number of points to sample along the curve
+ * @returns Array of [x, y] coordinates along the curve
+ */
+function approxBezier(points: Point[], n: number): Point[] {
+	if (points.length < 2) {
+		return points;
+	}
+
+	const result: Point[] = [];
+	const binom: number[] = [];
+
+	// Calculate binomial coefficients
+	for (let i = 0; i < points.length; i++) {
+		binom[i] = binomial(points.length - 1, i);
+	}
+
+	// Sample points along the curve
+	for (let j = 0; j < n; j++) {
+		const t = j / (n - 1); // t goes from 0 to 1
+		let pX = 0;
+		let pY = 0;
+
+		for (let i = 0; i < points.length; i++) {
+			const point = points[i];
+			if (!point) continue;
+
+			const tpi = Math.pow(1 - t, points.length - 1 - i);
+			const coeff = tpi * Math.pow(t, i);
+
+			pX += binom[i]! * coeff * point.x;
+			pY += binom[i]! * coeff * point.y;
+		}
+
+		result.push({ x: pX, y: pY });
+	}
+
+	return result;
+}
+
 export function drawBezierCurve(
+	ctx: CanvasRenderingContext2D,
+	controlPoints: Point[],
+	{
+		width,
+		alpha = 1.0,
+		strokeStyle,
+	}: {
+		width: number;
+		alpha?: number;
+		strokeStyle: CanvasFillStrokeStyles['strokeStyle'];
+	}
+): void {
+	if (controlPoints.length < 2) {
+		console.warn('Not enough control points');
+		return;
+	}
+
+	ctx.lineWidth = width;
+
+	// Use approximation for better curve rendering (similar to Python implementation)
+	const NUM_POINTS_BEZIER = 50;
+	const approximatedPoints = approxBezier(controlPoints, NUM_POINTS_BEZIER);
+
+	if (approximatedPoints.length === 0) {
+		console.warn('No approximated points generated');
+		return;
+	}
+
+	ctx.strokeStyle = strokeStyle;
+	ctx.globalAlpha = alpha;
+
+	ctx.beginPath();
+	ctx.moveTo(approximatedPoints[0]!.x, approximatedPoints[0]!.y);
+
+	for (let i = 1; i < approximatedPoints.length; i++) {
+		const point = approximatedPoints[i];
+		if (point) {
+			ctx.lineTo(point.x, point.y);
+		}
+	}
+
+	ctx.stroke();
+
+	// Reset global alpha
+	ctx.globalAlpha = 1.0;
+}
+
+export function drawBezierCurve_(
 	ctx: CanvasRenderingContext2D,
 	controlPoints: Point[],
 	{ width, color }: { width: number; color?: string }

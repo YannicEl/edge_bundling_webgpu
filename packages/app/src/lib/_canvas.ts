@@ -1,5 +1,6 @@
 import type { Graph } from '@bachelor/core/AdjacencyList';
-import { drawBezierCurve, drawCircle, drawLine } from '@bachelor/core/canvas';
+import { calcAngle, drawBezierCurve, drawCircle, drawLine } from '@bachelor/core/canvas';
+import { roma0 } from '@bachelor/core/canvas/colors/maps/roma0';
 import type { BundledEdge } from '@bachelor/core/edge-path-bundling/index';
 
 export type DrawGraphParams = {
@@ -86,9 +87,15 @@ export type DrawGraphAndBundledEdgesParams = {
 
 export function drawBundledEdges({ ctx, bundeledEdges }: DrawGraphAndBundledEdgesParams): void {
 	bundeledEdges.forEach(({ controlPoints }) => {
+		const start = controlPoints[0]!;
+		const end = controlPoints[controlPoints.length - 1]!;
+		const angle = calcAngle(start, end);
+		const [r, g, b] = roma0(angle);
+
 		drawBezierCurve(ctx, controlPoints, {
 			width: 1,
-			color: 'color(srgb 1 0 0 / 0.2)',
+			alpha: 0.4,
+			strokeStyle: `rgba(${r * 255}, ${g * 255}, ${b * 255}, 0.5)`,
 		});
 	});
 }

@@ -8,20 +8,23 @@ import gc
 from importedBundling import ImportedBundling
 
 def main():
-  G = Reader.readGraphML(f'../../core/src/datasets/graphml/airlines.graphml', G_width=1600, invertY=False, directed=False)      
+  G = Reader.readGraphML(f'../../core/src/datasets/graphml/airlines.graphml', invertY=False, directed=False)      
 
-  # #First create straight line drawing
-  # straight = StraightLine(G)
-  # straight.bundle()
-  # straight.draw("./test/")
+  #First create straight line drawing
+  straight = StraightLine(G)
+  straight.bundle()
+  straight.draw("./test/")
 
-  # bundling = SpannerBundlingFG(G)
-  # bundling.bundle()
-  # bundling.draw("./test/")
+  bundling = SpannerBundlingFG(G)
+  bundling.bundle()
+  bundling.draw("./test/")
 
-  # bundling.export("./test/bundling.json")
+  bundling.export("./test/bundling.json")
 
   bundling = ImportedBundling("./test/bundling.json")
+  bundling.draw("./test/")
+
+  bundling = ImportedBundling("./test/bundling_real.json")
   bundling.draw("./test/")
 
 

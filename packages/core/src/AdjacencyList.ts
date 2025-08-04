@@ -87,7 +87,7 @@ export type BundlingJSON = {
 	node_ids: string[];
 	edges: [start: string, end: string][];
 	splines: {
-		[key: `${number},${number}`]: [x: number, y: number][];
+		[key: `${number},${number}`]: number[];
 	};
 	dimensions: {
 		xmin: number;
@@ -97,4 +97,38 @@ export type BundlingJSON = {
 	};
 };
 
-export function exportBundling(graph: Graph, bundledEdges: BundledEdge): BundlingJSON {}
+export function exportBundling(graph: Graph, bundledEdges: BundledEdge[]): BundlingJSON {
+	const nodes: BundlingJSON['nodes'] = [];
+	const node_ids: BundlingJSON['node_ids'] = [];
+	graph.nodes.forEach((node, i) => {
+		nodes.push([node.x, node.y]);
+		node_ids.push(i.toString());
+	});
+
+	const edges: BundlingJSON['edges'] = [];
+	bundledEdges.forEach((bundledEdge) => {
+		edges.push([bundledEdge.edge.start.toString(), bundledEdge.edge.end.toString()]);
+	});
+
+	const splines: BundlingJSON['splines'] = {};
+	bundledEdges.forEach((bundledEdge) => {
+		const controlPoints = bundledEdge.controlPoints.slice(1, -1).map(({ nodeIndex }) => nodeIndex);
+
+		if (controlPoints.length > 2) {
+			splines[`${bundledEdge.edge.start},${bundledEdge.edge.end}`] = controlPoints;
+		}
+	});
+
+	return {
+		nodes,
+		node_ids,
+		edges,
+		splines,
+		dimensions: {
+			xmin: Math.min(...nodes.map(([x]) => x)),
+			xmax: Math.max(...nodes.map(([x]) => x)),
+			ymin: Math.min(...nodes.map(([, y]) => y)),
+			ymax: Math.max(...nodes.map(([, y]) => y)),
+		},
+	};
+}

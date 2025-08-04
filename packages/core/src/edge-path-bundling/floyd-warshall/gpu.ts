@@ -2,11 +2,11 @@ import type { Edge } from '../../AdjacencyList';
 import { Graph } from '../../AdjacencyList';
 import { FloydWarshall } from '../../shortest-path/floyd-warshall/FloydWarshall';
 import type { Spanner } from '../../spanner';
-import type { EdgePathBundling, EdgePathBundlingParams } from '../index';
+import type { BundledEdge, EdgePathBundling, EdgePathBundlingParams } from '../index';
 
 export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 	#device: GPUDevice;
-	#graph: Graph;
+	graph: Readonly<Graph>;
 
 	#maxDistortion: number;
 	#edgeWeightFactor: number;
@@ -23,14 +23,14 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 	}: EdgePathBundlingParams) {
 		this.#device = device;
 
-		this.#graph = graph;
+		this.graph = graph;
 
 		this.#maxDistortion = maxDistortion;
 		this.#edgeWeightFactor = edgeWeightFactor;
 
 		this.#spanner = new spannerAlgorithm({
 			device: this.#device,
-			graph: this.#graph,
+			graph: this.graph,
 			maxDistortion: this.#maxDistortion,
 		});
 	}
@@ -65,7 +65,7 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 		}
 
 		const difference: Edge[] = [];
-		this.#graph.edges.forEach((edge, key) => {
+		this.graph.edges.forEach((edge, key) => {
 			if (!this.#spanner.graph!.edges.has(key)) {
 				difference.push(edge);
 			}
@@ -73,10 +73,7 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 
 		const shortestPaths = await this.#floydWarshall.shortestPaths(difference);
 
-		const bundeledEdges: {
-			edge: Edge;
-			controlPoints: { x: number; y: number }[];
-		}[] = [];
+		const bundeledEdges: BundledEdge[] = [];
 
 		let i = 0;
 		for (const shortestPath of shortestPaths) {
@@ -91,9 +88,9 @@ export class EdgePathBundlingGPUFloydWarshall implements EdgePathBundling {
 				bundeledEdges.push({
 					edge,
 					controlPoints: shortestPath.nodes.map((nodeIndex) => {
-						const node = this.#graph.nodes.get(nodeIndex as number);
+						const node = this.graph.nodes.get(nodeIndex as number);
 						if (!node) throw new Error('Node not found');
-						return { x: node.x, y: node.y };
+						return { nodeIndex: nodeIndex as number, x: node.x, y: node.y };
 					}),
 				});
 			}

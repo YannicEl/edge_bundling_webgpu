@@ -189,7 +189,10 @@ class Experiment:
                 oben += len(vDictUnreachable[n])
                 unten += len(vDictUnreachable[n]) + len(vDictReachable[n])
 
-                lie1 = len(vDictUnreachable[n]) / (len(vDictUnreachable[n]) + len(vDictReachable[n]))
+                if len(vDictUnreachable[n]) + len(vDictReachable[n]) == 0:
+                    lie1 = 0
+                else:
+                    lie1 = len(vDictUnreachable[n]) / (len(vDictUnreachable[n]) + len(vDictReachable[n]))
 
                 ambVAmbiguity.append(lie1)
 

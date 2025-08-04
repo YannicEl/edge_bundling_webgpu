@@ -10,10 +10,10 @@ class ImportedBundling(AbstractBundling):
     Import a pre-bundled graph from a file instead of computing the bundling.
     
     This algorithm loads a graph that has already been bundled and preserves
-    the bundling information (splines, layers, etc.) from the file.
+    the bundling information (splines with node indices, layers, etc.) from the file.
     '''
     
-    def __init__(self, bundled_file_path: str):
+    def __init__(self, bundled_file_path: str, name: str):
         # Load the bundled graph data
         self.G = self.load_bundled_graph(bundled_file_path)
         
@@ -21,7 +21,7 @@ class ImportedBundling(AbstractBundling):
         super().__init__(self.G)
         
         # Set the name for this bundling algorithm
-        self.name = 'imported'
+        self.name = name
         
         # Apply the bundling data to the graph
         self.bundle()
@@ -38,9 +38,17 @@ class ImportedBundling(AbstractBundling):
             
         # Apply splines to edges
         if 'splines' in self.bundled_data:
-            for edge_key, spline_points in self.bundled_data['splines'].items():
+            for edge_key, spline_node_indices in self.bundled_data['splines'].items():
                 # Parse the edge key (format: "u,v")
                 u, v = edge_key.split(',')
+                
+                # Convert node indices back to coordinates
+                spline_points = []
+                for node_index in spline_node_indices:
+                    if 0 <= node_index < len(self.bundled_data['node_ids']):
+                        node_id = self.bundled_data['node_ids'][node_index]
+                        node_coords = self.bundled_data['nodes'][node_index]
+                        spline_points.append(node_coords)
                 
                 # Create SplineC object from the control points
                 spline = SplineC(spline_points)
@@ -55,6 +63,7 @@ class ImportedBundling(AbstractBundling):
         
         Args:
             file_path: Path to the JSON file containing the bundled graph data.
+                      The splines should contain node indices instead of coordinates.
             
         Returns:
             nx.Graph: A NetworkX graph with nodes, edges, and bundling data.

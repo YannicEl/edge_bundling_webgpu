@@ -83,9 +83,9 @@ export function drawGraphAndBundledEdges({
 	drawGraph({ ctx, graph, drawLabels: false, drawNodes: false, drawEdges: false });
 
 	bundeledEdges.forEach(({ edge, controlPoints }, i) => {
-		drawBezierCurve(ctx, edge.start.x, edge.start.y, edge.end.x, edge.end.y, controlPoints, {
+		drawBezierCurve(ctx, controlPoints, {
 			width: 1,
-			color: 'color(srgb 1 0 0 / 0.2)',
+			strokeStyle: 'rgba(255, 0, 0, 0.2)',
 		});
 	});
 	console.timeEnd('Draw');

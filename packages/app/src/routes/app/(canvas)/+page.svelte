@@ -11,6 +11,7 @@
 	import { onMount } from 'svelte';
 	import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 	import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
+	import { exportBundling } from '@bachelor/core/AdjacencyList';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -23,6 +24,7 @@
 	let maxDistortion = $state<number>(2);
 	let edgeWeightFactor = $state<number>(2);
 	let epb: EdgePathBundlingGPUFloydWarshall;
+	let graph: any; // Store graph for use in drawBundledEdges
 
 	canvas.onResize = () => runGPU();
 
@@ -38,7 +40,8 @@
 	// });
 
 	onMount(async () => {
-		const graph = await loadGraph(selectedGraph);
+		graph = await loadGraph(selectedGraph);
+		// const spannerControl = await loadSpanner(selectedGraph);
 
 		// console.time('greedy');
 		// const greedySpanner = new GreedySpanner({ graph, device, maxDistortion });
@@ -53,7 +56,7 @@
 		epb = new EdgePathBundlingGPUFloydWarshall({
 			device,
 			graph,
-			maxDistortion,
+			maxDistortion: 2,
 			edgeWeightFactor,
 			spannerAlgorithm: GreedySpanner,
 		});
@@ -72,6 +75,9 @@
 		clearCanvas(context);
 		drawBundledEdges({ ctx: context, bundeledEdges });
 		console.timeEnd('Draw');
+
+		// const exported = exportBundling(epb.graph, bundeledEdges);
+		// console.log(JSON.stringify(exported, undefined, 2));
 	}
 </script>
 

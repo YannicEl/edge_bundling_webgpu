@@ -3,7 +3,7 @@ import type { Spanner, SpannerParams } from '../spanner';
 
 export type BundledEdge = {
 	edge: Edge;
-	controlPoints: { x: number; y: number }[];
+	controlPoints: { nodeIndex: number; x: number; y: number }[];
 };
 
 export type EdgePathBundlingParams = {

@@ -1,3 +1,4 @@
+import matplotlib
 import numpy as np
 from nx2ipe.nx2ipe import IpeConverter, SplineC
 import matplotlib.pyplot as plt
@@ -7,6 +8,8 @@ import cmcrameri as cmc
 import networkx as nx
 from abc import ABC, abstractmethod
 import json
+
+matplotlib.use('Agg')
 
 ### Plotting Parameters ###
 LINEWIDTH = 1.0
@@ -56,19 +59,22 @@ class AbstractBundling:
                 angle = 360 + angle
 
             if self.G.is_directed():
-                a = angle / 360
+                angle = angle / 360
             else:            
                 if angle > 180:
                     angle = (angle + 180) % 360
-                a = angle / 180
+                angle = angle / 180
             
-            a += 0.75
-            if a > 1:
-                a = a - 1
+            angle += 0.75
+            if angle > 1:
+                angle = angle - 1
 
             cmap = cmc.cm.romaO
-            color = cmap(a)
-            data['Angle'] = a
+            color = cmap(angle)
+
+            print(angle, color)
+
+            data['Angle'] = angle
             data['Stroke'] = f"{color[0]} {color[1]} {color[2]}"
 
     def drawTrl(self, path):
@@ -183,7 +189,7 @@ class AbstractBundling:
         - nodes: list of [x, y] coordinates
         - node_ids: list of node IDs corresponding to the nodes list
         - edges: list of [u, v] pairs
-        - bundling: dictionary containing splines, layers, and strokes
+        - splines: dictionary containing spline node indices instead of coordinates
         
         Args:
             file_path: Path to save the JSON file.
@@ -199,6 +205,13 @@ class AbstractBundling:
             nodes.append([node_data['X'], node_data['Y']])
             node_ids.append(node_id)
         
+        # Create mappings for efficient lookup
+        node_id_to_index = {node_id: idx for idx, node_id in enumerate(node_ids)}
+        coord_to_node_id = {}
+        for node_id, node_data in self.G.nodes(data=True):
+            coord_key = (node_data['X'], node_data['Y'])
+            coord_to_node_id[coord_key] = node_id
+        
         # Prepare edges data
         edges = []
         for u, v in self.G.edges():
@@ -208,9 +221,21 @@ class AbstractBundling:
         for u, v, data in self.G.edges(data=True):
             edge_key = f"{u},{v}"
             
-            # Export spline if available
+            # Export spline if available, converting coordinates to node indices
             if 'Spline' in data and data['Spline'] is not None:
-                splines[edge_key] = data['Spline'].points
+                # Convert spline points to node indices
+
+                spline_node_indices = []
+                for point in data['Spline'].points:
+                    # Try direct coordinate lookup first
+                    coord_key = (point[0], point[1])
+                    if coord_key in coord_to_node_id:
+                        node_id = coord_to_node_id[coord_key]
+                        spline_node_indices.append(node_id_to_index[node_id])
+                    else:
+                        print("öpö")
+                
+                splines[edge_key] = spline_node_indices
         
         # Prepare complete data structure
         export_data = {

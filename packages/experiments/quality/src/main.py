@@ -8,7 +8,7 @@ from straight import StraightLine
 import gc
 
 def effectivenessExperiments(base, dataset, algorithm, invertY):
-    G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', G_width=1600, invertY=invertY, directed=False)      
+    G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', invertY=invertY, directed=False)      
     
     outPath = f'{base}/output/{dataset}/'
     if not os.path.exists(outPath):
@@ -30,21 +30,18 @@ def effectivenessExperiments(base, dataset, algorithm, invertY):
     return exp.run(outPath)
 
 def effectivenessExperiments2(base, dataset, algorithm, invertY):
-    G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', G_width=1600, invertY=invertY, directed=False)      
+    G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', invertY=invertY, directed=False)      
     
     outPath = f'{base}/output/{dataset}/'
     if not os.path.exists(outPath):
         os.makedirs(outPath)
-
-    if not os.path.exists(outPath + 'pickle/'):
-        os.makedirs(outPath + 'pickle/')
 
     #First create straight line drawing
     straight = StraightLine(G)
     straight.bundle()
     straight.draw(outPath)
 
-    bundling = ImportedBundling(f'test/bundling.json')
+    bundling = ImportedBundling(f'test/{dataset}_bundling.json', f'imported_{dataset}')
     bundling.draw(outPath)
 
     exp = Experiment(bundling, straight)
@@ -54,12 +51,15 @@ def main():
     base = "."
     datasets = [('airlines', True)]
     # datasets = [('airlines', True), ('migration', False), ('airtraffic', False)]
-    algorithms = [StraightLine,  SpannerBundlingFG]
+    algorithms = [StraightLine,  SpannerBundlingFG, ] #ImportedBundling]
 
     results = []
     for dataset, invertY in datasets:
         for algorithm in algorithms:
-            ink, dist, amb = effectivenessExperiments(base, dataset, algorithm, invertY)
+            if algorithm == ImportedBundling:
+                ink, dist, amb = effectivenessExperiments2(base, dataset, algorithm, invertY)
+            else:
+                ink, dist, amb = effectivenessExperiments(base, dataset, algorithm, invertY)
 
             results.append({
               'dataset': dataset,
@@ -68,15 +68,6 @@ def main():
               'dist': dist,
               'amb': amb
             })
-
-            # ink, dist, amb = effectivenessExperiments2(base, dataset, algorithm, invertY)
-            # results.append({
-            #   'dataset': dataset,
-            #   'algorithm': algorithm.__name__ + ' (imported)',
-            #   'ink': ink,
-            #   'dist': dist,
-            #   'amb': amb
-            # })
 
     for result in results:
       print("--------------------------------")
