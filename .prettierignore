@@ -7,4 +7,5 @@ worker-runtime.d.ts
 .svelte-kit
 .wrangler
 packages/app/src/lib/data
-packages/core/src/datasets  
+packages/core/src/datasets 
+packages/experiments/quality
