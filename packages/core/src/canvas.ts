@@ -6,14 +6,17 @@ export function drawLine(
 	y1: number,
 	x2: number,
 	y2: number,
-	{ width, color }: { width: number; color?: string }
+	{ width, alpha, color }: { width: number; alpha?: number; color?: string }
 ): void {
 	ctx.lineWidth = width;
 	if (color) ctx.strokeStyle = color;
+	if (alpha) ctx.globalAlpha = alpha;
 	ctx.beginPath();
 	ctx.moveTo(x1, y1);
 	ctx.lineTo(x2, y2);
 	ctx.stroke();
+
+	ctx.globalAlpha = 1.0;
 }
 
 export function drawCircle(

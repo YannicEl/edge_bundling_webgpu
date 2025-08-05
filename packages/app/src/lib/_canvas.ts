@@ -9,10 +9,16 @@ export type DrawGraphParams = {
 	drawLabels?: boolean;
 	drawNodes?: boolean;
 	drawEdges?: boolean;
+	centered?: boolean;
 };
 
-export function clearCanvas(ctx: CanvasRenderingContext2D): void {
-	ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
+export function clearCanvas(ctx: CanvasRenderingContext2D, clearColor?: string): void {
+	if (clearColor) {
+		ctx.fillStyle = clearColor;
+		ctx.fillRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
+	} else {
+		ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
+	}
 }
 
 export function drawGraph({
@@ -21,9 +27,8 @@ export function drawGraph({
 	drawLabels = true,
 	drawNodes = true,
 	drawEdges = true,
+	centered = false,
 }: DrawGraphParams): void {
-	ctx.clearRect(0, 0, ctx.canvas?.width, ctx.canvas?.height);
-
 	// Compute bounding box
 	const nodes = [...graph.nodes.values()];
 	if (nodes.length === 0) return;
@@ -37,8 +42,8 @@ export function drawGraph({
 	const canvasCenterX = ctx.canvas.width / 2;
 	const canvasCenterY = ctx.canvas.height / 2;
 
-	const offsetX = canvasCenterX - graphCenterX;
-	const offsetY = canvasCenterY - graphCenterY;
+	const offsetX = centered ? canvasCenterX - graphCenterX : 0;
+	const offsetY = centered ? canvasCenterY - graphCenterY : 0;
 
 	if (drawEdges) {
 		let i = 0;
@@ -50,9 +55,14 @@ export function drawGraph({
 				console.warn('Edge has no start or end node', edge);
 				return;
 			}
+
+			const angle = calcAngle(start, end);
+			const [r, g, b] = roma0(angle);
+
 			drawLine(ctx, start.x + offsetX, start.y + offsetY, end.x + offsetX, end.y + offsetY, {
 				width: 1,
-				color: 'black',
+				alpha: 0.4,
+				color: `rgba(${r * 255}, ${g * 255}, ${b * 255})`,
 			});
 
 			if (drawLabels) {
@@ -95,7 +105,7 @@ export function drawBundledEdges({ ctx, bundeledEdges }: DrawGraphAndBundledEdge
 		drawBezierCurve(ctx, controlPoints, {
 			width: 1,
 			alpha: 0.4,
-			strokeStyle: `rgba(${r * 255}, ${g * 255}, ${b * 255}, 0.5)`,
+			strokeStyle: `rgba(${r * 255}, ${g * 255}, ${b * 255})`,
 		});
 	});
 }

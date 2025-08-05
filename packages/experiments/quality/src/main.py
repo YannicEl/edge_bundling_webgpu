@@ -9,7 +9,7 @@ import gc
 
 def effectivenessExperiments(base, dataset, algorithm, invertY):
     G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', invertY=invertY, directed=False)      
-    
+
     outPath = f'{base}/output/{dataset}/'
     if not os.path.exists(outPath):
         os.makedirs(outPath)
@@ -30,40 +30,42 @@ def effectivenessExperiments(base, dataset, algorithm, invertY):
     return exp.run(outPath)
 
 def effectivenessExperiments2(base, dataset, algorithm, invertY):
-    G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', invertY=invertY, directed=False)      
+    G = Reader.readGraphML(f'../../core/src/datasets/graphml/{dataset}.graphml', G_width=1200, invertY=invertY, directed=False)      
     
-    outPath = f'{base}/output/{dataset}/'
+    outPath = f'{base}/output/pepb/{dataset}/'
     if not os.path.exists(outPath):
         os.makedirs(outPath)
+
+    if not os.path.exists(outPath + 'pickle/'):
+        os.makedirs(outPath + 'pickle/')
 
     #First create straight line drawing
     straight = StraightLine(G)
     straight.bundle()
-    straight.draw(outPath)
 
-    bundling = ImportedBundling(f'test/{dataset}_bundling.json', f'imported_{dataset}')
-    bundling.draw(outPath)
+    bundling = ImportedBundling(f'input/{dataset}_{algorithm}_bundling.json', f'imported_{algorithm}')
+    bundling.draw(outPath, saveFile=False)
 
     exp = Experiment(bundling, straight)
     return exp.run(outPath)
 
 def main():
     base = "."
-    datasets = [('airlines', True)]
-    # datasets = [('airlines', True), ('migration', False), ('airtraffic', False)]
-    algorithms = [StraightLine,  SpannerBundlingFG, ] #ImportedBundling]
+    # datasets = [('airlines', True)]
+    datasets = [('airlines', True), ('migration', False), ('airtraffic', False)]
+    algorithms = [StraightLine,  SpannerBundlingFG, "theta", "greedy"]
 
     results = []
     for dataset, invertY in datasets:
         for algorithm in algorithms:
-            if algorithm == ImportedBundling:
+            if isinstance(algorithm, str):
                 ink, dist, amb = effectivenessExperiments2(base, dataset, algorithm, invertY)
             else:
                 ink, dist, amb = effectivenessExperiments(base, dataset, algorithm, invertY)
 
             results.append({
               'dataset': dataset,
-              'algorithm': algorithm.__name__,
+              'algorithm': algorithm if isinstance(algorithm, str) else algorithm.__name__,
               'ink': ink,
               'dist': dist,
               'amb': amb

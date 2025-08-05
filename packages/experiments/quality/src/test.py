@@ -11,15 +11,15 @@ def main():
   G = Reader.readGraphML(f'../../core/src/datasets/graphml/airlines.graphml', invertY=False, directed=False)      
 
   #First create straight line drawing
-  straight = StraightLine(G)
-  straight.bundle()
-  straight.draw("./test/")
+  # straight = StraightLine(G)
+  # straight.bundle()
+  # straight.draw("./test/")
 
   bundling = SpannerBundlingFG(G)
   bundling.bundle()
+  bundling.export("./test/bundling.json")
   bundling.draw("./test/")
 
-  bundling.export("./test/bundling.json")
 
   bundling = ImportedBundling("./test/bundling.json")
   bundling.draw("./test/")

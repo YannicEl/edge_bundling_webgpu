@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { clearCanvas, drawBundledEdges } from '$lib/_canvas';
+	import { clearCanvas, drawBundledEdges, drawGraph } from '$lib/_canvas';
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
-	import { loadGraph, loadSpanner } from '$lib/_loadGraph';
+	import { DATASET_NAMES, loadGraph } from '@bachelor/core/datasets/load';
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -18,11 +18,12 @@
 
 	let selectedGraph = $state<string>(page.url.searchParams.get('graph') ?? 'simple');
 	$effect(() => {
-		goto(`?graph=${selectedGraph}`);
+		goto(`?graph=${selectedGraph}&spannerAlgorithm=${spannerAlgorithm}`);
 	});
 
 	let maxDistortion = $state<number>(2);
 	let edgeWeightFactor = $state<number>(2);
+	let spannerAlgorithm = $state<string>(page.url.searchParams.get('spannerAlgorithm') ?? 'theta');
 	let epb: EdgePathBundlingGPUFloydWarshall;
 	let graph: any; // Store graph for use in drawBundledEdges
 
@@ -56,7 +57,7 @@
 		epb = new EdgePathBundlingGPUFloydWarshall({
 			device,
 			graph,
-			maxDistortion: 2,
+			maxDistortion,
 			edgeWeightFactor,
 			spannerAlgorithm: GreedySpanner,
 		});
@@ -64,20 +65,68 @@
 		runGPU();
 	});
 
+	async function sleep(ms: number) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
 	async function runGPU() {
 		if (!epb) return;
 
-		console.time('EPB');
+		const t1 = performance.now();
 		const bundeledEdges = await epb.bundle();
-		console.timeEnd('EPB');
+		const t2 = performance.now();
+		console.log(`EPB: ${t2 - t1}ms`);
+
+		// const cache = localStorage.getItem(`${selectedGraph}_greedy`);
+		// if (cache) {
+		// 	localStorage.setItem(`${selectedGraph}_greedy`, `${cache};${t2 - t1}`);
+		// } else {
+		// 	localStorage.setItem(`${selectedGraph}_greedy`, `${t2 - t1}`);
+		// }
+
+		// await sleep(2000);
+
+		// const length = cache?.split(';').length ?? 0;
+		// console.log({ length });
+		// if (length < 24) {
+		// 	location.reload();
+		// }
 
 		console.time('Draw');
-		clearCanvas(context);
+		clearCanvas(context, 'white');
+		// drawGraph({ ctx: context, graph, drawLabels: false, drawNodes: false });
 		drawBundledEdges({ ctx: context, bundeledEdges });
 		console.timeEnd('Draw');
 
 		// const exported = exportBundling(epb.graph, bundeledEdges);
 		// console.log(JSON.stringify(exported, undefined, 2));
+	}
+
+	function downloadCanvas() {
+		const canvasElement = canvas.element;
+		const link = document.createElement('a');
+		link.download = `PEPB_${spannerAlgorithm}_${selectedGraph}_d_${maxDistortion}_w_${edgeWeightFactor}.png`;
+		link.href = canvasElement.toDataURL('image/png');
+		link.click();
+	}
+
+	function downloadBundling() {
+		if (!epb || !graph) return;
+
+		// Get the bundled edges from the last run
+		epb.bundle().then((bundledEdges) => {
+			const exported = exportBundling(graph, bundledEdges);
+			const dataStr = JSON.stringify(exported, null, 2);
+			const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+			const link = document.createElement('a');
+			link.download = `${selectedGraph}_${spannerAlgorithm}_bundling.json`;
+			link.href = URL.createObjectURL(dataBlob);
+			link.click();
+
+			// Clean up the object URL
+			URL.revokeObjectURL(link.href);
+		});
 	}
 </script>
 
@@ -87,9 +136,17 @@
 		<select name="graph" bind:value={selectedGraph}>
 			<option value="simple">Simple</option>
 			<option value="example">Example</option>
-			<option value="airlines">Airlines</option>
-			<option value="migration">Migration</option>
-			<option value="airtraffic">Airtraffic</option>
+			{#each DATASET_NAMES as datasetName}
+				<option value={datasetName}>{datasetName}</option>
+			{/each}
+		</select>
+	</label>
+
+	<label class="flex items-center justify-between gap-2">
+		Graph
+		<select name="graph" bind:value={spannerAlgorithm}>
+			<option value="theta">Theta</option>
+			<option value="greedy">Greedy</option>
 		</select>
 	</label>
 
@@ -104,6 +161,10 @@
 	</label>
 
 	<button onclick={runGPU}>Run GPU</button>
+
+	<button onclick={downloadCanvas}>Download Canvas</button>
+
+	<button onclick={downloadBundling}>Download Bundling</button>
 
 	<a href="/">back</a>
 </ControlPanel>

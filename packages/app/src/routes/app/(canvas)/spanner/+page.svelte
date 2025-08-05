@@ -2,7 +2,6 @@
 	import { getCanvasState } from '$lib/state/canvas';
 	import { getWebGPUState } from '$lib/state/webGPU';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
-	import { loadGraph, loadSpanner } from '$lib/_loadGraph';
 	import RangeInput from '$lib/components/RangeInput.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -10,6 +9,7 @@
 	import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 	import { onMount } from 'svelte';
 	import { drawGraph } from '$lib/_canvas';
+	import { DATASET_NAMES, loadGraph } from '@bachelor/core/datasets/load';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -58,7 +58,7 @@
 		console.timeEnd('theta');
 
 		const graphControl = await loadGraph(selectedGraph);
-		const spannerControl = await loadSpanner(selectedGraph);
+		// const spannerControl = await loadSpanner(selectedGraph);
 		// console.log(spannerControl);
 		// console.log(JSON.stringify(spannerControl.toJSON()));
 
@@ -68,8 +68,8 @@
 		// const isSame = JSON.stringify(spannerControl.toJSON()) === JSON.stringify(lol.toJSON());
 		// console.log({ isSame });
 
-		console.log({ spannerControl });
-		drawGraph({ ctx: context, graph: greedySpanner, drawLabels: false });
+		// console.log({ spannerControl });
+		drawGraph({ ctx: context, graph: thetaSpanner, drawLabels: false });
 	}
 </script>
 
@@ -79,9 +79,9 @@
 		<select name="graph" bind:value={selectedGraph}>
 			<option value="simple">Simple</option>
 			<option value="example">Example</option>
-			<option value="airlines">Airlines</option>
-			<option value="migration">Migration</option>
-			<option value="airtraffic">Airtraffic</option>
+			{#each DATASET_NAMES as datasetName}
+				<option value={datasetName}>{datasetName}</option>
+			{/each}
 		</select>
 	</label>
 

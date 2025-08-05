@@ -3,20 +3,28 @@ import { EdgePathBundlingGPUFloydWarshall } from '@bachelor/core/edge-path-bundl
 import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
 import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 import { initWebGPU } from '@bachelor/core/webGpu';
-import { afterAll, beforeAll, describe, test } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, test } from 'vitest';
 import type { CSV, CSVRow } from './utils';
-import { ITERATIONS, loadDatasets, mean, median, writeResult } from './utils';
+import {
+	ITERATIONS,
+	loadDatasets,
+	mean,
+	median,
+	sleep,
+	SLEEP_BETWEEN_ITERATIONS,
+	writeResult,
+} from './utils';
 
-const datasets = await loadDatasets();
+const datasets = await loadDatasets(['airlines', 'migration', 'airtraffic']);
 
 const algorithms = [
 	{
-		name: 'greedy',
-		value: GreedySpanner,
-	},
-	{
 		name: 'theta',
 		value: ThetaSpanner,
+	},
+	{
+		name: 'greedy',
+		value: GreedySpanner,
 	},
 ] as const;
 
@@ -74,6 +82,10 @@ beforeAll(() => {
 			});
 		});
 	});
+});
+
+afterEach(async () => {
+	await sleep(SLEEP_BETWEEN_ITERATIONS);
 });
 
 describe.sequential.for(algorithms)('Interactivity $name', (algorithm) => {

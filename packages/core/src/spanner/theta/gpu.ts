@@ -38,8 +38,7 @@ export class ThetaSpanner extends Spanner {
 		this.#graph = graph;
 
 		this.#maxDistortion = maxDistortion;
-		this.#k = this.#maxDistortion;
-		// this.#k = this.#maxDistortion * 50;
+		this.#k = Math.floor(this.#maxDistortion * 64);
 
 		const positionsBufferData = new BufferData({ x: 'float', y: 'float' }, this.#graph.nodes.size);
 
@@ -113,9 +112,10 @@ export class ThetaSpanner extends Spanner {
 	}
 
 	async compute() {
-		// if (this.#spanner) {
-		// 	return this.#spanner;
-		// }
+		if (this.#spanner) {
+			console.log('Spanner already computed');
+			return this.#spanner;
+		}
 
 		writeGPUBuffer({
 			device: this.#device,
@@ -211,15 +211,14 @@ export class ThetaSpanner extends Spanner {
 
 	set maxDistortion(value: number) {
 		this.#maxDistortion = value;
-		this.#k = this.#maxDistortion;
-		// this.#k = Math.floor(this.#maxDistortion * 50);
+		this.#k = Math.floor(this.#maxDistortion * 64);
 
 		this.#uniformsBufferData.set({
 			k: this.#k,
 			theta: (Math.PI * 2) / this.#k,
 		});
 
-		// this.updateEdgesBuffer();
+		this.#spanner = undefined;
 	}
 
 	get maxDistortion() {

@@ -72,8 +72,6 @@ class AbstractBundling:
             cmap = cmc.cm.romaO
             color = cmap(angle)
 
-            print(angle, color)
-
             data['Angle'] = angle
             data['Stroke'] = f"{color[0]} {color[1]} {color[2]}"
 
@@ -100,7 +98,7 @@ class AbstractBundling:
                     f.write(f"{x:.4f} {y:.4f} ")
                 f.write("\n")
 
-    def draw(self, path, color=True, plotIpe=False):
+    def draw(self, path, color=True, plotIpe=False, saveFile=True):
         '''
         Draw the bundling. Either using the assign color function or the coloring given by the bundling. if plotIpe is true, it will create an IPE drawing as well.
         '''
@@ -141,7 +139,8 @@ class AbstractBundling:
 
         ax.plot(X, Y, linestyle="none", color=CIRCLE_COLOR_LIGHT, marker='.', markersize = CIRCLE)
 
-        plt.savefig(f'{path}{self.name}.png')
+        if saveFile:
+            plt.savefig(f'{path}{self.name}.png')
         plt.close(fig)
 
     def approxBezier(self, points, n):
