@@ -241,14 +241,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cmcrameri", specifier = ">=1.9" },
-    { name = "matplotlib", specifier = ">=3.10.3" },
-    { name = "networkx", specifier = ">=3.5" },
-    { name = "numpy", specifier = ">=2.3.2" },
-    { name = "nx2ipe", specifier = ">=0.0.7" },
-    { name = "pillow", specifier = ">=11.3.0" },
-    { name = "scipy", specifier = ">=1.16.1" },
-    { name = "setuptools", specifier = ">=80.9.0" },
+    { name = "cmcrameri", specifier = "==1.9" },
+    { name = "matplotlib", specifier = "==3.10.3" },
+    { name = "networkx", specifier = "==3.5" },
+    { name = "numpy", specifier = "==2.3.2" },
+    { name = "nx2ipe", specifier = "==0.0.7" },
+    { name = "pillow", specifier = "==11.3.0" },
+    { name = "scipy", specifier = "==1.16.1" },
+    { name = "setuptools", specifier = "==80.9.0" },
 ]
 
 [[package]]
