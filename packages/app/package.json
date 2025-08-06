@@ -20,7 +20,7 @@
 		"@types/node": "24.2.0",
 		"@webgpu/types": "0.1.64",
 		"postcss-nesting": "13.0.2",
-		"svelte": "5.37.3",
+		"svelte": "5.38.0",
 		"svelte-check": "4.3.1",
 		"typescript": "5.9.2",
 		"unocss": "66.4.1",
@@ -30,6 +30,6 @@
 	},
 	"dependencies": {
 		"@bachelor/core": "workspace:",
-		"bits-ui": "2.9.1"
+		"bits-ui": "2.9.2"
 	}
 }
