@@ -12,7 +12,7 @@ import json
 matplotlib.use('Agg')
 
 ### Plotting Parameters ###
-LINEWIDTH = 1.0
+LINEWIDTH = 1.5
 LINE_COLOR = 'darkgrey'
 ALPHA = 0.4
 CIRCLE = 4.0
@@ -123,13 +123,16 @@ class AbstractBundling:
                 points = [(self.G.nodes[source]['X'], self.G.nodes[source]['Y'])] + data['Spline'].points + [(self.G.nodes[target]['X'], self.G.nodes[target]['Y'])]
 
                 X, Y = self.approxBezier(points, 50)
+                data['X'] = X
+                data['Y'] = Y
+                ax.plot(X, Y, color=cmap(data['Angle']), alpha=ALPHA, lw = LINEWIDTH)
             else:
                 X = [self.G.nodes[source]['X'], self.G.nodes[target]['X']]
                 Y = [self.G.nodes[source]['Y'], self.G.nodes[target]['Y']]
 
             data['X'] = X
             data['Y'] = Y
-            ax.plot(X, Y, color=cmap(data['Angle']), alpha=ALPHA, lw = LINEWIDTH)
+            # ax.plot(X, Y, color=cmap(data['Angle']), alpha=ALPHA, lw = LINEWIDTH)
 
         X = []
         Y = []
@@ -137,7 +140,7 @@ class AbstractBundling:
             X.append(data['X'])
             Y.append(data['Y'])
 
-        ax.plot(X, Y, linestyle="none", color=CIRCLE_COLOR_LIGHT, marker='.', markersize = CIRCLE)
+        # ax.plot(X, Y, linestyle="none", color=CIRCLE_COLOR_LIGHT, marker='.', markersize = CIRCLE)
 
         if saveFile:
             plt.savefig(f'{path}{self.name}.png')

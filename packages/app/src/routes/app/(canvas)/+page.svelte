@@ -40,6 +40,29 @@
 	// 	epb.setEdgeWeightFactor(edgeWeightFactor).then(() => runGPU());
 	// });
 
+	$effect(() => {
+		if (!epb) return;
+
+		epb = new EdgePathBundlingGPUFloydWarshall({
+			device,
+			graph,
+			maxDistortion,
+			edgeWeightFactor,
+			spannerAlgorithm: spannerAlgorithm === 'theta' ? ThetaSpanner : GreedySpanner,
+		});
+	});
+
+	$effect(() => {
+		if (!epb) return;
+		epb = new EdgePathBundlingGPUFloydWarshall({
+			device,
+			graph,
+			maxDistortion,
+			edgeWeightFactor,
+			spannerAlgorithm: spannerAlgorithm === 'theta' ? ThetaSpanner : GreedySpanner,
+		});
+	});
+
 	onMount(async () => {
 		graph = await loadGraph(selectedGraph);
 		// const spannerControl = await loadSpanner(selectedGraph);
@@ -59,7 +82,7 @@
 			graph,
 			maxDistortion,
 			edgeWeightFactor,
-			spannerAlgorithm: GreedySpanner,
+			spannerAlgorithm: spannerAlgorithm === 'theta' ? ThetaSpanner : GreedySpanner,
 		});
 
 		runGPU();
