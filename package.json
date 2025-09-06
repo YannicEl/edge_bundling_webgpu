@@ -1,10 +1,10 @@
 {
 	"name": "bachelor",
 	"type": "module",
-	"packageManager": "pnpm@10.14.0",
+	"packageManager": "pnpm@10.15.1",
 	"engines": {
-		"node": "24",
-		"pnpm": "10"
+		"node": "24.7.0",
+		"pnpm": "10.15.1"
 	},
 	"scripts": {
 		"format:check": "prettier --check .",
