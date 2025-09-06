@@ -5,7 +5,7 @@
 	"packageRules": [
 		{
 			"matchDepTypes": ["engines"],
-			"enabled": false
+			"enabled": true
 		}
 	],
 	"rangeStrategy": "pin",
