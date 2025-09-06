@@ -13,7 +13,7 @@
 	"devDependencies": {
 		"@total-typescript/tsconfig": "1.0.4",
 		"@vitest/browser": "3.2.4",
-		"playwright": "1.54.2",
+		"playwright": "1.55.0",
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
