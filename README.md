@@ -2,6 +2,10 @@
 
 A high-performance implementation of edge path bundling algorithms using WebGPU for GPU-accelerated graph processing and visualization. This project implements spanner-based edge bundling techniques with both CPU and GPU implementations for interactive graph visualization.
 
+## Demo
+
+[https://bachelor.yannic.at/](https://bachelor.yannic.at/)
+
 ## Overview
 
 Edge path bundling is a technique for reducing visual clutter in dense graph visualizations by routing edges through common paths rather than drawing them as straight lines. This implementation focuses on **Spanner-based Edge Path Bundling (S-EPB)**, which uses graph spanners to create efficient bundling solutions.
