@@ -16,7 +16,7 @@
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
 
-	let selectedGraph = $state<string>(page.url.searchParams.get('graph') ?? 'simple');
+	let selectedGraph = $state<string>(page.url.searchParams.get('graph') ?? 'airlines');
 	$effect(() => {
 		goto(`?graph=${selectedGraph}&spannerAlgorithm=${spannerAlgorithm}`);
 	});
@@ -88,10 +88,6 @@
 		runGPU();
 	});
 
-	async function sleep(ms: number) {
-		return new Promise((resolve) => setTimeout(resolve, ms));
-	}
-
 	async function runGPU() {
 		if (!epb) return;
 
@@ -157,8 +153,6 @@
 	<label class="flex items-center justify-between gap-2">
 		Graph
 		<select name="graph" bind:value={selectedGraph}>
-			<option value="simple">Simple</option>
-			<option value="example">Example</option>
 			{#each DATASET_NAMES as datasetName}
 				<option value={datasetName}>{datasetName}</option>
 			{/each}
