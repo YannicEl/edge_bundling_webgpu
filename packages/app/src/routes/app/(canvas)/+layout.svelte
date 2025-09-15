@@ -7,6 +7,7 @@
 	const { children, data }: LayoutProps = $props();
 
 	let canvas = $state<HTMLCanvasElement | null>();
+	let canvasSet = $state(false);
 
 	onMount(async () => {
 		if (!canvas) {
@@ -34,6 +35,8 @@
 			canvas: responsiveCanvas,
 			context,
 		});
+
+		canvasSet = true;
 	});
 </script>
 
@@ -45,7 +48,7 @@
 		height={window.innerHeight}
 	></canvas>
 
-	{#if canvas}
+	{#if canvasSet}
 		{@render children()}
 	{/if}
 </main>
