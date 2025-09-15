@@ -22,9 +22,17 @@
 		}
 
 		const { maxTextureDimension2D } = data.webGPU?.device.limits;
+		const canvasWidth = Math.min(window.innerWidth * 1.5, maxTextureDimension2D);
+		const canvasHeight = Math.min(window.innerHeight * 1.5, maxTextureDimension2D);
+
+		// Set initial canvas size
+		canvas.width = canvasWidth;
+		canvas.height = canvasHeight;
+
 		const responsiveCanvas = new ResponsiveCanvas(canvas, {
 			maxWidth: maxTextureDimension2D,
 			maxHeight: maxTextureDimension2D,
+			scaleFactor: 1.5,
 		});
 
 		onDestroy(() => {
@@ -40,12 +48,12 @@
 	});
 </script>
 
-<main class="h-dvh w-dvw">
+<main class="h-dvh w-dvw overflow-hidden">
 	<canvas
 		bind:this={canvas}
-		class="h-full w-full"
-		width={window.innerWidth}
-		height={window.innerHeight}
+		class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform"
+		width={window.innerWidth * 1.5}
+		height={window.innerHeight * 1.5}
 	></canvas>
 
 	{#if canvasSet}
