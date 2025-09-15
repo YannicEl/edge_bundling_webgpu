@@ -457,10 +457,10 @@
 		<RangeInput min={0} max={10} step={0.1} bind:value={maxDistortion} />
 	</label>
 
-	<label>
+	<!-- <label>
 		Edge weight factor
 		<RangeInput min={1} max={3} step={0.01} bind:value={edgeWeightFactor} />
-	</label>
+	</label> -->
 
 	<button
 		onclick={downloadCanvas}
