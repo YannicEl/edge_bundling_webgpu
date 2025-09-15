@@ -1,5 +1,11 @@
 import type { Graph } from '@bachelor/core/AdjacencyList';
-import { calcAngle, drawBezierCurve, drawCircle, drawLine } from '@bachelor/core/canvas';
+import {
+	calcAngle,
+	drawBezierCurve,
+	drawBezierCurve_,
+	drawCircle,
+	drawLine,
+} from '@bachelor/core/canvas';
 import { roma0 } from '@bachelor/core/canvas/colors/maps/roma0';
 import type { BundledEdge } from '@bachelor/core/edge-path-bundling/index';
 
@@ -93,19 +99,31 @@ export function drawGraph({
 export type DrawGraphAndBundledEdgesParams = {
 	ctx: CanvasRenderingContext2D;
 	bundeledEdges: BundledEdge[];
+	mode: 'quality' | 'fast';
 };
 
-export function drawBundledEdges({ ctx, bundeledEdges }: DrawGraphAndBundledEdgesParams): void {
+export function drawBundledEdges({
+	ctx,
+	bundeledEdges,
+	mode,
+}: DrawGraphAndBundledEdgesParams): void {
 	bundeledEdges.forEach(({ controlPoints }) => {
 		const start = controlPoints[0]!;
 		const end = controlPoints[controlPoints.length - 1]!;
 		const angle = calcAngle(start, end);
 		const [r, g, b] = roma0(angle);
 
-		drawBezierCurve(ctx, controlPoints, {
-			width: 1,
-			alpha: 0.4,
-			strokeStyle: `rgba(${r * 255}, ${g * 255}, ${b * 255})`,
-		});
+		if (mode === 'quality') {
+			drawBezierCurve(ctx, controlPoints, {
+				width: 1,
+				alpha: 0.4,
+				strokeStyle: `rgba(${r * 255}, ${g * 255}, ${b * 255})`,
+			});
+		} else {
+			drawBezierCurve_(ctx, controlPoints, {
+				width: 1,
+				color: `rgba(${r * 255}, ${g * 255}, ${b * 255})`,
+			});
+		}
 	});
 }

@@ -191,6 +191,7 @@ export class FloydWarshall {
 
 			const commandBuffer = encoder.finish();
 			this.#device.queue.submit([commandBuffer]);
+			await this.#device.queue.onSubmittedWorkDone();
 
 			await this.#distanceMatrixReadBuffer.mapAsync(GPUMapMode.READ);
 			const distances = new Float32Array(await this.#distanceMatrixReadBuffer.getMappedRange());
@@ -305,6 +306,7 @@ export class FloydWarshall {
 
 		const commandBuffer = encoder.finish();
 		this.#device.queue.submit([commandBuffer]);
+		await this.#device.queue.onSubmittedWorkDone();
 
 		const shortestPathsDistancesData = await mapAndReadBuffer(
 			shortestPathsDistancesReadBuffer,

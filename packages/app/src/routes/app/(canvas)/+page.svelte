@@ -11,7 +11,6 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { ThetaSpanner } from '@bachelor/core/spanner/theta/gpu';
 	import { GreedySpanner } from '@bachelor/core/spanner/greedy/gpu';
-	import { exportBundling } from '@bachelor/core/AdjacencyList';
 
 	const { device } = getWebGPUState();
 	const { canvas, context } = getCanvasState();
@@ -20,11 +19,16 @@
 		(page.url.searchParams.get('graph') as DatasetName) ?? 'airlines'
 	);
 	$effect(() => {
-		goto(`?graph=${selectedGraph}&spannerAlgorithm=${spannerAlgorithm}`);
+		goto(
+			`?graph=${selectedGraph}&spannerAlgorithm=${spannerAlgorithm}&renderingMode=${renderingMode}`
+		);
 	});
 
 	let maxDistortion = $state<number>(2);
 	let edgeWeightFactor = $state<number>(2);
+	let renderingMode = $state<'quality' | 'fast'>(
+		(page.url.searchParams.get('renderingMode') as 'quality' | 'fast') ?? 'quality'
+	);
 	let spannerAlgorithm = $state<string>(page.url.searchParams.get('spannerAlgorithm') ?? 'theta');
 	let epb: EdgePathBundlingGPUFloydWarshall;
 	let graph: any; // Store graph for use in drawBundledEdges
@@ -34,6 +38,8 @@
 	let snapshotScale = 1; // Scale at which snapshot was captured
 	let hasCenteredInitialView = $state(false);
 	let isLoading = $state(false);
+	let isComputing = false;
+	let rerunRequested = false;
 
 	// Drag state
 	let isDragging = $state(false);
@@ -45,7 +51,19 @@
 	const minScale = 0.2;
 	const maxScale = 8;
 
-	canvas.onResize = () => runGPU();
+	function debounce(fn: () => void, delay = 100) {
+		let t: number | undefined;
+		return () => {
+			if (t) window.clearTimeout(t);
+			t = window.setTimeout(fn, delay);
+		};
+	}
+
+	canvas.onResize = debounce(() => {
+		if (!cachedBundledEdges) return;
+		drawCanvas();
+		void captureSnapshot();
+	}, 100);
 
 	// Mouse event handlers for dragging
 	function handleMouseDown(event: MouseEvent) {
@@ -140,19 +158,34 @@
 	// });
 
 	// Re-run when control values change (distortion, weight, algorithm)
+	let lastSpannerAlgorithm = spannerAlgorithm;
 	$effect(() => {
 		const md = maxDistortion;
 		const ew = edgeWeightFactor;
 		const algo = spannerAlgorithm;
-		if (!graph) return;
-		epb = new EdgePathBundlingGPUFloydWarshall({
-			device,
-			graph,
-			maxDistortion: md,
-			edgeWeightFactor: ew,
-			spannerAlgorithm: algo === 'theta' ? ThetaSpanner : GreedySpanner,
-		});
+		if (!epb || !graph) return;
+		epb.maxDistortion = md;
+		epb.edgeWeightFactor = ew;
+		if (algo !== lastSpannerAlgorithm) {
+			epb = new EdgePathBundlingGPUFloydWarshall({
+				device,
+				graph,
+				maxDistortion: md,
+				edgeWeightFactor: ew,
+				spannerAlgorithm: algo === 'theta' ? ThetaSpanner : GreedySpanner,
+			});
+			lastSpannerAlgorithm = algo;
+		}
 		runGPU();
+	});
+
+	// Re-render when rendering mode changes (no recompute)
+	$effect(() => {
+		const mode = renderingMode;
+		if (cachedBundledEdges && !isDragging) {
+			drawCanvas();
+			void captureSnapshot();
+		}
 	});
 
 	// Reload graph when dataset changes and re-run
@@ -167,35 +200,19 @@
 				edgeWeightFactor,
 				spannerAlgorithm: spannerAlgorithm === 'theta' ? ThetaSpanner : GreedySpanner,
 			});
+
+			// Reset view so the new dataset recenters like on first render
+			cachedBundledEdges = null;
+			snapshot = null;
+			canvasScale = 1;
+			canvasOffset = { x: 0, y: 0 };
+			hasCenteredInitialView = false;
+
 			runGPU();
 		})();
 	});
 
 	onMount(async () => {
-		graph = await loadGraph(selectedGraph);
-		// const spannerControl = await loadSpanner(selectedGraph);
-
-		// console.time('greedy');
-		// const greedySpanner = new GreedySpanner({ graph, device, maxDistortion });
-		// const greedySpannerGraph = await greedySpanner.compute();
-		// console.timeEnd('greedy');
-
-		// console.time('theta');
-		// const thetaSpanner = new ThetaSpanner({ graph, device, k: 100 });
-		// const thetaSpannerGraph = await thetaSpanner.compute();
-		// console.timeEnd('theta');
-
-		epb = new EdgePathBundlingGPUFloydWarshall({
-			device,
-			graph,
-			maxDistortion,
-			edgeWeightFactor,
-			spannerAlgorithm: spannerAlgorithm === 'theta' ? ThetaSpanner : GreedySpanner,
-		});
-
-		hasCenteredInitialView = false;
-		runGPU();
-
 		// Add mouse event listeners for dragging
 		canvas.element.addEventListener('mousedown', handleMouseDown);
 		canvas.element.addEventListener('mousemove', handleMouseMove);
@@ -240,7 +257,7 @@
 
 		if (cachedBundledEdges) {
 			// drawGraph({ ctx: context, graph, drawLabels: false, drawNodes: false });
-			drawBundledEdges({ ctx: context, bundeledEdges: cachedBundledEdges });
+			drawBundledEdges({ ctx: context, bundeledEdges: cachedBundledEdges, mode: renderingMode });
 		}
 
 		context.restore();
@@ -288,7 +305,12 @@
 
 	async function runGPU() {
 		if (!epb) return;
+		if (isComputing) {
+			rerunRequested = true;
+			return;
+		}
 
+		isComputing = true;
 		isLoading = true;
 		const t1 = performance.now();
 		const bundeledEdges = await epb.bundle();
@@ -351,6 +373,11 @@
 		drawCanvas();
 		await captureSnapshot();
 		isLoading = false;
+		isComputing = false;
+		if (rerunRequested) {
+			rerunRequested = false;
+			void runGPU();
+		}
 
 		// const exported = exportBundling(epb.graph, bundeledEdges);
 		// console.log(JSON.stringify(exported, undefined, 2));
@@ -358,29 +385,42 @@
 
 	function downloadCanvas() {
 		const canvasElement = canvas.element;
+
+		// Calculate the visible viewport area (excluding the oversized canvas borders)
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+		const canvasWidth = canvasElement.width;
+		const canvasHeight = canvasElement.height;
+
+		// Calculate the center offset to crop to visible area
+		const centerOffsetX = (canvasWidth - viewportWidth) / 2;
+		const centerOffsetY = (canvasHeight - viewportHeight) / 2;
+
+		// Create a temporary canvas for the cropped image
+		const tempCanvas = document.createElement('canvas');
+		tempCanvas.width = viewportWidth;
+		tempCanvas.height = viewportHeight;
+		const tempCtx = tempCanvas.getContext('2d');
+
+		if (!tempCtx) return;
+
+		// Draw only the visible portion of the original canvas
+		tempCtx.drawImage(
+			canvasElement,
+			centerOffsetX,
+			centerOffsetY,
+			viewportWidth,
+			viewportHeight, // source area
+			0,
+			0,
+			viewportWidth,
+			viewportHeight // destination area
+		);
+
 		const link = document.createElement('a');
 		link.download = `PEPB_${spannerAlgorithm}_${selectedGraph}_d_${maxDistortion}_w_${edgeWeightFactor}.png`;
-		link.href = canvasElement.toDataURL('image/png');
+		link.href = tempCanvas.toDataURL('image/png');
 		link.click();
-	}
-
-	function downloadBundling() {
-		if (!epb || !graph) return;
-
-		// Get the bundled edges from the last run
-		epb.bundle().then((bundledEdges) => {
-			const exported = exportBundling(graph, bundledEdges);
-			const dataStr = JSON.stringify(exported, null, 2);
-			const dataBlob = new Blob([dataStr], { type: 'application/json' });
-
-			const link = document.createElement('a');
-			link.download = `${selectedGraph}_${spannerAlgorithm}_bundling.json`;
-			link.href = URL.createObjectURL(dataBlob);
-			link.click();
-
-			// Clean up the object URL
-			URL.revokeObjectURL(link.href);
-		});
 	}
 </script>
 
@@ -397,9 +437,18 @@
 	<label class="flex items-center justify-between gap-2">
 		Spanner Algorithm
 
-		<select name="graph" bind:value={spannerAlgorithm}>
+		<select name="spannerAlgorithm" bind:value={spannerAlgorithm}>
 			<option value="theta">Theta</option>
 			<option value="greedy">Greedy</option>
+		</select>
+	</label>
+
+	<label class="flex items-center justify-between gap-2">
+		Rendering mode
+
+		<select name="renderingMode" bind:value={renderingMode}>
+			<option value="fast">Fast</option>
+			<option value="quality">Quality</option>
 		</select>
 	</label>
 
@@ -410,10 +459,14 @@
 
 	<label>
 		Edge weight factor
-		<RangeInput min={0.01} max={2} step={0.01} bind:value={edgeWeightFactor} />
+		<RangeInput min={1} max={3} step={0.01} bind:value={edgeWeightFactor} />
 	</label>
 
-	<button onclick={downloadCanvas}>Download Canvas</button>
+	<button
+		onclick={downloadCanvas}
+		class="cursor-pointer border border-black hover:bg-black hover:text-white"
+		>Download Canvas</button
+	>
 
 	<!-- <button onclick={downloadBundling}>Download Bundling</button> -->
 </ControlPanel>

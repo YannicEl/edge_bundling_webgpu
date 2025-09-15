@@ -14,7 +14,19 @@ export type DatasetName = (typeof DATASET_NAMES)[number];
 
 export async function loadGraph(name: DatasetName): Promise<Graph> {
 	const graphJSON = await import(`./graphs/${name}.json`);
-	const graph = Graph.fromJSON(graphJSON);
+
+	// Mirror the airtraffic dataset on the Y axis
+	const normalizedJSON =
+		name === 'airtraffic'
+			? {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+					nodes: (graphJSON.nodes as [number, number][])?.map(([x, y]) => [x, -y]) ?? [],
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+					edges: (graphJSON.edges as [number, number][]) ?? [],
+				}
+			: graphJSON;
+
+	const graph = Graph.fromJSON(normalizedJSON as any);
 
 	return graph;
 }
