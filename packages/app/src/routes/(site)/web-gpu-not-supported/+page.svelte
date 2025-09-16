@@ -1,5 +1,5 @@
 <h1>WebGPU not supported.</h1>
-<p>It Looks like WebGPU is not supported on in your browser.</p>
+<p>It Looks like WebGPU is not supported in your browser.</p>
 <p>
 	Find support for WebGPU <a
 		href="https://caniuse.com/webgpu"
