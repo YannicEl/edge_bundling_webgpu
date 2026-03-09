@@ -12,5 +12,5 @@ dependencies = [
     "nx2ipe==0.0.7",
     "pillow==11.3.0",
     "scipy==1.16.1",
-    "setuptools==80.9.0",
+    "setuptools==82.0.1",
 ]
