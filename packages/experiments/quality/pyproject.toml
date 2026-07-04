@@ -10,7 +10,7 @@ dependencies = [
     "networkx==3.5",
     "numpy==2.3.2",
     "nx2ipe==0.0.7",
-    "pillow==11.3.0",
+    "pillow==12.3.0",
     "scipy==1.16.1",
     "setuptools==80.9.0",
 ]
