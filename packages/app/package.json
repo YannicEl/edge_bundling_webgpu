@@ -24,7 +24,7 @@
 		"svelte-check": "4.3.1",
 		"typescript": "5.9.2",
 		"unocss": "66.5.0",
-		"unplugin-icons": "22.2.0",
+		"unplugin-icons": "23.0.1",
 		"vite": "7.1.4",
 		"wrangler": "4.34.0"
 	},
