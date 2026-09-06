@@ -3,14 +3,14 @@ name = "quality"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = "==3.11.13"
+requires-python = "==3.14.7"
 dependencies = [
-    "cmcrameri==1.9",
-    "matplotlib==3.10.5",
-    "networkx==3.5",
-    "numpy==2.3.2",
+    "cmcrameri==1.10",
+    "matplotlib==3.11.1",
+    "networkx==3.6.1",
+    "numpy==2.5.3",
     "nx2ipe==0.0.7",
     "pillow==11.3.0",
-    "scipy==1.16.1",
-    "setuptools==80.9.0",
+    "scipy==1.18.1",
+    "setuptools==80.10.2",
 ]
