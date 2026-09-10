@@ -12,9 +12,9 @@
 	},
 	"devDependencies": {
 		"@total-typescript/tsconfig": "1.0.4",
-		"@vitest/browser": "3.2.4",
+		"@vitest/browser": "5.0.0",
 		"playwright": "1.55.0",
-		"vitest": "3.2.4"
+		"vitest": "5.0.0"
 	},
 	"dependencies": {
 		"@bachelor/core": "workspace:"
